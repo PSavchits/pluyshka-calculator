@@ -49,7 +49,7 @@ const SandboxCalculation = ({ show, onClose }) => {
 
         if (hasNotebook) baseScore += 1;
 
-        baseScore -= skips;
+        baseScore -= Math.floor(skips / 6);
 
         let researchPoints = 0;
 

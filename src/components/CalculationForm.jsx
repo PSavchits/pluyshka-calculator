@@ -78,7 +78,7 @@ const CalculationForm = () => {
         if (hasNotebook) baseScore += 1;
 
         // 6. Пропуски (не влияют на допуск, только на балл)
-        baseScore -= skips;
+        baseScore -= Math.floor(skips / 6);
 
         // 7. Научные работы
         let researchPoints = 0;
