@@ -1,11 +1,6 @@
 import React from 'react';
 
-const AttendanceBlock = ({
-                             skippedHours,
-                             setSkippedHours,
-                             notesVolume,
-                             setNotesVolume
-                         }) => {
+const AttendanceBlock = ({ skippedHours, setSkippedHours, notesVolume, setNotesVolume }) => {
     return (
         <div className="attendance-section section">
             <h3>Посещаемость</h3>
@@ -22,24 +17,26 @@ const AttendanceBlock = ({
                             const value = Math.max(0, parseInt(e.target.value) || 0);
                             setSkippedHours(value % 2 === 0 ? value : value - 1);
                         }}
-                        className="attendance-input"
                     />
                 </label>
             </div>
 
             <div className="input-group">
                 <label>
-                    Объем конспекта (%):
+                    Объём конспекта (%):
                     <input
                         type="number"
                         min="0"
                         max="100"
                         value={notesVolume}
                         onChange={e => {
-                            const value = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                            const value = Math.min(100,
+                                Math.max(0,
+                                    parseInt(e.target.value) || 0
+                                )
+                            );
                             setNotesVolume(value);
                         }}
-                        className="notes-input"
                     />
                 </label>
             </div>
