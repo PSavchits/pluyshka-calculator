@@ -19,25 +19,21 @@ const FileUpload = ({ onDone }) => {
             const workbook = XLSX.read(data);
             const allStudents = [];
 
-            // Обрабатываем каждый лист (группу) в файле
             workbook.SheetNames.forEach((sheetName) => {
                 const worksheet = workbook.Sheets[sheetName];
-
-                // Получаем данные, начиная с D8 до первой пустой ячейки
-                let row = 8; // Начинаем с 8-й строки
+                let row = 8;
                 const students = [];
 
                 while (true) {
                     const cellAddress = `D${row}`;
                     const cell = worksheet[cellAddress];
 
-                    // Если ячейка пустая или не существует - заканчиваем обработку
                     if (!cell || !cell.v || String(cell.v).trim() === '') {
                         break;
                     }
 
                     students.push({
-                        groupName: sheetName, // Название группы = имя листа
+                        groupName: sheetName,
                         fullName: String(cell.v).trim(),
                     });
 
@@ -46,7 +42,6 @@ const FileUpload = ({ onDone }) => {
 
                 if (students.length > 0) {
                     allStudents.push(...students);
-                    console.log(`Группа ${sheetName}: загружено ${students.length} студентов`);
                 }
             });
 
@@ -57,7 +52,15 @@ const FileUpload = ({ onDone }) => {
 
             await saveStudents(allStudents);
             alert(`Успешно загружено ${allStudents.length} студентов из ${workbook.SheetNames.length} групп`);
+
+            // Вызываем callback если он есть
             onDone?.(allStudents);
+
+            // Перезагружаем страницу через 1 секунду после алерта
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
         } catch (error) {
             console.error('Ошибка обработки файла:', error);
             alert('Произошла ошибка при обработке файла');

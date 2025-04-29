@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import AttendanceBlock from './AttendanceBlock';
-import ScienceBlock from './ScienceBlock';
-import PresentationBlock from './PresentationBlock';
-import BonusDistribution from './BonusDistribution';
+import AttendanceBlock from './blocks/AttendanceBlock';
+import ScienceBlock from './blocks/ScienceBlock';
+import PresentationBlock from './blocks/PresentationBlock';
+import BonusDistribution from './blocks/BonusDistribution';
 
 const SandboxCalculation = ({ show, onClose }) => {
     const [formType, setFormType] = useState('Дневная');
