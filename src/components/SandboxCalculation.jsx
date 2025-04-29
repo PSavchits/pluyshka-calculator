@@ -1,144 +1,224 @@
-import React, { useState } from 'react';
-import DayFormEvaluation from './DayFormEvaluation';
-import ResearchBlock from './ResearchForm';
+import React, { useState, useEffect } from 'react';
+import AttendanceBlock from './AttendanceBlock';
+import ScienceBlock from './ScienceBlock';
+import PresentationBlock from './PresentationBlock';
+import BonusDistribution from './BonusDistribution';
 
 const SandboxCalculation = ({ show, onClose }) => {
-    const [form, setForm] = useState('Дневная');
+    const [formType, setFormType] = useState('Дневная');
+
+    // Общие состояния
+    const [labs, setLabs] = useState([0, 0, 0, 0]);
+    const [tests, setTests] = useState([0, 0, 0]);
+
+    // Состояния для научной деятельности
+    const [writtenWorks, setWrittenWorks] = useState(0);
+    const [publishedWorks, setPublishedWorks] = useState(0);
+    const [oralReports, setOralReports] = useState(0);
+    const [urgentPublications, setUrgentPublications] = useState(0);
+    const [awards, setAwards] = useState(0);
+
+    // Состояния для презентаций
+    const [presentations, setPresentations] = useState(0);
+    const [voicedPresentations, setVoicedPresentations] = useState(0);
+
+    // Состояния для дневной формы
+    const [skippedHours, setSkippedHours] = useState(0);
+    const [notesVolume, setNotesVolume] = useState(0);
+    const [closedLabs, setClosedLabs] = useState(0);
+
+    // Состояния для расчета
+    const [bonusPoints, setBonusPoints] = useState(0);
     const [result, setResult] = useState(null);
 
-    const [skips, setSkips] = useState(0);
-    const [labCount, setLabCount] = useState(0);
-    const [labs, setLabs] = useState([]);
-    const [testCount, setTestCount] = useState(0);
-    const [tests, setTests] = useState([]);
-    const [hasNotebook, setHasNotebook] = useState(false);
+    // Сброс состояний при изменении типа формы
+    useEffect(() => {
+        setLabs(formType === 'Дневная' ? [0, 0, 0, 0] : [0, 0]);
+        setClosedLabs(0);
+        setBonusPoints(0);
+        setResult(null);
+    }, [formType]);
 
-    const [showResearchBlock, setShowResearchBlock] = useState(false);
-    const [urgentPublication, setUrgentPublication] = useState(false);
-    const [reports, setReports] = useState([]);
+    const calculateResult = () => {
+        let score = 0;
 
-    const handleCalculate = () => {
-        let baseScore = 0;
+        // Общие параметры
+        const sciBonus = publishedWorks + oralReports + awards;
+        const presBonus = presentations + voicedPresentations;
+        const totalBonuses = sciBonus + presBonus;
 
-        const excludedLabs = new Set();
-        reports.forEach(report => {
-            if (report.removedLabs && Array.isArray(report.removedLabs)) {
-                report.removedLabs.forEach(i => excludedLabs.add(i));
-            }
-        });
+        if(formType === 'Дневная') {
+            // Расчет для дневной формы
+            const skipPenalty = Math.floor(skippedHours / 2) * 0.5;
+            const notesBonus = notesVolume >= 70 ? 1 : 0;
 
-        const failedLabs = labs
-            .map((val, i) => ({ val: Number(val), index: i + 1 }))
-            .filter(({ val, index }) => val < 3 && !excludedLabs.has(index - 1));
+            const activeLabsCount = 4 - Math.min(closedLabs, 4);
+            const activeLabs = labs.slice(0, activeLabsCount);
 
-        if (failedLabs.length > 0) {
-            setResult(`Студент не допущен к экзамену (не сданы: ${failedLabs.map(l => l.index).join(', ')})`);
-            return;
+            const labAvg = activeLabsCount > 0
+                ? activeLabs.reduce((a, b) => a + b, 0) / activeLabsCount
+                : 0;
+
+            const testAvg = tests.reduce((a, b) => a + b, 0) / 3;
+
+            score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
+
+            if(urgentPublications > 0) score = Math.max(score, 8);
+            score += bonusPoints;
+
+        } else {
+            // Расчет для дистанционной формы
+            const labAvg = labs.reduce((a, b) => a + b, 0) / 2;
+            score = labAvg + bonusPoints;
+            if(urgentPublications > 0) score = Math.max(score, 8);
         }
 
-        const actualLabScores = labs.filter((_, i) => !excludedLabs.has(i));
-        const labScoreAvg = actualLabScores.length > 0
-            ? actualLabScores.reduce((sum, val) => sum + val, 0) / actualLabScores.length
-            : 0;
-        baseScore += labScoreAvg;
-
-        const testAvg = tests.length > 0
-            ? tests.reduce((sum, val) => sum + val, 0) / tests.length
-            : 0;
-        baseScore += testAvg / 2;
-
-        if (hasNotebook) baseScore += 1;
-
-        baseScore -= Math.floor(skips / 6);
-
-        let researchPoints = 0;
-
-        if (urgentPublication) {
-            baseScore = 8;
-        }
-
-        reports.forEach(report => {
-            switch (report.mode) {
-                case 'points':
-                    baseScore += 1;
-                    break;
-                case '2points':
-                    baseScore += 2;
-                    break;
-                case '1point_1lab':
-                    baseScore += 1;
-                    break;
-            }
-
-            if (baseScore >= 10) {
-                if (report.mode === 'points') researchPoints += 1;
-                if (report.mode === '2points') researchPoints += 2;
-                if (report.mode === '1point_1lab') researchPoints += 1;
-            }
-        });
-
-        if (baseScore > 10) baseScore = 10;
-
-        setResult(baseScore);
+        setResult(Math.min(Math.max(score, 0), 10).toFixed(1));
     };
 
-    if (!show) return null;
+    const handleReset = () => {
+        setFormType('Дневная');
+        setLabs([0, 0, 0, 0]);
+        setTests([0, 0, 0]);
+        setWrittenWorks(0);
+        setPublishedWorks(0);
+        setOralReports(0);
+        setUrgentPublications(0);
+        setAwards(0);
+        setPresentations(0);
+        setVoicedPresentations(0);
+        setSkippedHours(0);
+        setNotesVolume(0);
+        setClosedLabs(0);
+        setBonusPoints(0);
+        setResult(null);
+    };
+
+    if(!show) return null;
 
     return (
-        <div>
-            <h3>Песочница расчёта</h3>
-            <select
-                value={form}
-                onChange={(e) => setForm(e.target.value)}
-            >
-                <option value="Дневная">Дневная</option>
-            </select>
+        <div className="sandbox-overlay">
+            <div className="sandbox-modal">
+                <div className="modal-header">
+                    <h2>Песочница расчетов</h2>
+                    <button className="close-btn" onClick={onClose}>&times;</button>
+                </div>
 
-            {form === 'Дневная' && (
-                <>
-                    <DayFormEvaluation
-                        skips={skips}
-                        setSkips={setSkips}
-                        labCount={labCount}
-                        setLabCount={setLabCount}
-                        labs={labs}
-                        setLabs={setLabs}
-                        testCount={testCount}
-                        setTestCount={setTestCount}
-                        tests={tests}
-                        setTests={setTests}
-                        hasNotebook={hasNotebook}
-                        setHasNotebook={setHasNotebook}
-                        onCalculate={handleCalculate}
+                <div className="form-control">
+                    <label>Форма обучения:</label>
+                    <select
+                        value={formType}
+                        onChange={(e) => setFormType(e.target.value)}
+                    >
+                        <option value="Дневная">Дневная</option>
+                        <option value="ДО">Дистанционная</option>
+                    </select>
+                </div>
+
+                <div className="sections-container">
+                    {/* Блок лабораторных работ */}
+                    <div className="section">
+                        <h3>Лабораторные работы</h3>
+                        {labs.map((lab, index) => (
+                            <div className="input-group" key={index}>
+                                <label>Лаб {index + 1}:
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="10"
+                                        value={lab}
+                                        onChange={(e) => {
+                                            const newLabs = [...labs];
+                                            newLabs[index] = Math.max(0,
+                                                Math.min(10, parseInt(e.target.value) || 0)
+                                            );
+                                            setLabs(newLabs);
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Блок тестов */}
+                    <div className="section">
+                        <h3>Тесты</h3>
+                        {tests.map((test, index) => (
+                            <div className="input-group" key={index}>
+                                <label>Тест {index + 1}:
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        max="10"
+                                        value={test}
+                                        onChange={(e) => {
+                                            const newTests = [...tests];
+                                            newTests[index] = Math.max(0,
+                                                Math.min(10, parseInt(e.target.value) || 0)
+                                            );
+                                            setTests(newTests);
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Компоненты только для дневной формы */}
+                    {formType === 'Дневная' && (
+                        <AttendanceBlock
+                            skippedHours={skippedHours}
+                            setSkippedHours={setSkippedHours}
+                            notesVolume={notesVolume}
+                            setNotesVolume={setNotesVolume}
+                        />
+                    )}
+
+                    {/* Общие компоненты */}
+                    <ScienceBlock
+                        writtenWorks={writtenWorks}
+                        setWrittenWorks={setWrittenWorks}
+                        publishedWorks={publishedWorks}
+                        setPublishedWorks={setPublishedWorks}
+                        oralReports={oralReports}
+                        setOralReports={setOralReports}
+                        urgentPublications={urgentPublications}
+                        setUrgentPublications={setUrgentPublications}
+                        awards={awards}
+                        setAwards={setAwards}
                     />
 
-                    <div style={{ marginTop: '1rem' }}>
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={showResearchBlock}
-                                onChange={(e) => setShowResearchBlock(e.target.checked)}
-                            />
-                            Учитывать научные работы
-                        </label>
+                    <PresentationBlock
+                        presentations={presentations}
+                        setPresentations={setPresentations}
+                        voicedPresentations={voicedPresentations}
+                        setVoicedPresentations={setVoicedPresentations}
+                    />
 
-                        {showResearchBlock && (
-                            <ResearchBlock
-                                reports={reports}
-                                setReports={setReports}
-                                urgentPublication={urgentPublication}
-                                setUrgentPublication={setUrgentPublication}
-                                labCount={labCount}
-                            />
-                        )}
+                    {/* Распределение бонусов */}
+                    <BonusDistribution
+                        totalBonuses={publishedWorks + oralReports + awards + presentations + voicedPresentations}
+                        closedLabs={formType === 'Дневная' ? closedLabs : 0}
+                        setClosedLabs={formType === 'Дневная' ? setClosedLabs : () => {}}
+                        bonusPoints={bonusPoints}
+                        setBonusPoints={setBonusPoints}
+                        maxLabsToClose={4}
+                        isRemote={formType === 'ДО'}
+                    />
+                </div>
+
+                <div className="result-section">
+                    <h3>Результат: {result ?? '0.0'}</h3>
+                    <div className="action-buttons">
+                        <button className="calculate-btn" onClick={calculateResult}>
+                            Рассчитать
+                        </button>
+                        <button className="reset-btn" onClick={handleReset}>
+                            Сбросить
+                        </button>
                     </div>
-                </>
-            )}
-
-            {result !== null && (
-                <p>Результат: {result}</p>
-            )}
-            <button onClick={onClose}>Закрыть</button>
+                </div>
+            </div>
         </div>
     );
 };

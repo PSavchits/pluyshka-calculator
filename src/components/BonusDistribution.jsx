@@ -27,7 +27,7 @@ const BonusDistribution = ({
                 setBonusPoints(Math.min(bonusPoints, totalBonuses - newClosedLabs));
             }
         }
-    }, [totalBonuses, isRemote]);
+    }, [totalBonuses, isRemote, bonusPoints, closedLabs, setBonusPoints, setClosedLabs]);
 
     return (
         <div className="bonus-distribution">
