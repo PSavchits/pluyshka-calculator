@@ -1,8 +1,9 @@
 import React from 'react';
 import FileUpload from './components/FileUpload';
-import CalculationForm from './components/CalculationForm';
+import CalculationForm from './components/calculate/CalculationForm';
 import ExportGroup from './components/ExportGroup';
 import DeleteGroup from './components/DeleteGroup';
+import './styles/global.css'
 
 function App() {
   return (

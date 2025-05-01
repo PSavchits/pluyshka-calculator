@@ -5,17 +5,26 @@ const STUDENT_STORE = 'students';
 const SANDBOX_STORE = 'sandbox';
 
 export const initDB = async () => {
-    return openDB(DB_NAME, 2, {
-        upgrade(db, oldVersion) {
-            if (!db.objectStoreNames.contains(STUDENT_STORE)) {
-                const store = db.createObjectStore(STUDENT_STORE, {keyPath: 'id', autoIncrement: true});
-                store.createIndex('groupName', 'groupName');
-                store.createIndex('fullName', 'fullName');
+    return openDB(DB_NAME, 3, {
+        upgrade(db) {
+            if (db.objectStoreNames.contains(STUDENT_STORE)) {
+                db.deleteObjectStore(STUDENT_STORE);
             }
-            if (oldVersion < 2 && !db.objectStoreNames.contains(SANDBOX_STORE)) {
-                db.createObjectStore(SANDBOX_STORE, {keyPath: 'id'});
+            if (db.objectStoreNames.contains(SANDBOX_STORE)) {
+                db.deleteObjectStore(SANDBOX_STORE);
             }
-        },
+
+            const studentStore = db.createObjectStore(STUDENT_STORE, {
+                keyPath: 'id',
+                autoIncrement: true
+            });
+            studentStore.createIndex('groupName', 'groupName');
+            studentStore.createIndex('fullName', 'fullName');
+            studentStore.createIndex('finalMark', 'finalMark');
+            studentStore.createIndex('plushiePoint', 'plushiePoint');
+
+            db.createObjectStore(SANDBOX_STORE, {keyPath: 'id'});
+        }
     });
 };
 
