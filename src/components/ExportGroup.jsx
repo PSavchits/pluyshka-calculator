@@ -96,7 +96,7 @@ const ExportGroupData = () => {
             </div>
 
             <button
-                className="export-button"
+                className={`export-button ${isLoading ? 'loading' : ''}`}
                 onClick={handleExport}
                 disabled={!selectedGroup || students.length === 0 || isLoading}
             >

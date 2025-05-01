@@ -1,39 +1,47 @@
-import React, {useMemo, useState} from 'react';
-import {updateStudentEvaluation} from '../../utils/db';
+import React, { useMemo, useState } from 'react';
+import { updateStudentEvaluation } from '../../utils/db';
 import AttendanceBlock from './blocks/AttendanceBlock';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
+import '../../styles/global.css'
 
-const DayForm = ({student, onStudentUpdate}) => {
-    // Состояния для основных данных
-    const [skippedHours, setSkippedHours] = useState(student.skippedHours || 0);
-    const [notesVolume, setNotesVolume] = useState(student.notesVolume || 0);
-    const [labs, setLabs] = useState(student.labs || [0, 0, 0, 0]);
-    const [tests, setTests] = useState(student.tests || [0, 0, 0]);
+const DayForm = ({ student, onStudentUpdate }) => {
+    // Состояния с пустыми строками вместо 0
+    const [skippedHours, setSkippedHours] = useState(student.skippedHours?.toString() || '');
+    const [notesVolume, setNotesVolume] = useState(student.notesVolume?.toString() || '');
+    const [labs, setLabs] = useState(student.labs?.map(String) || ['', '', '', '']);
+    const [tests, setTests] = useState(student.tests?.map(String) || ['', '', '']);
 
     // Состояния для научной деятельности
-    const [writtenWorks, setWrittenWorks] = useState(student.writtenWorks || 0);
-    const [publishedWorks, setPublishedWorks] = useState(student.publishedWorks || 0);
-    const [oralReports, setOralReports] = useState(student.oralReports || 0);
-    const [urgentPublications, setUrgentPublications] = useState(student.urgentPublications || 0);
-    const [awards, setAwards] = useState(student.awards || 0);
+    const [writtenWorks, setWrittenWorks] = useState(student.writtenWorks?.toString() || '');
+    const [publishedWorks, setPublishedWorks] = useState(student.publishedWorks?.toString() || '');
+    const [oralReports, setOralReports] = useState(student.oralReports?.toString() || '');
+    const [urgentPublications, setUrgentPublications] = useState(student.urgentPublications?.toString() || '');
+    const [awards, setAwards] = useState(student.awards?.toString() || '');
 
     // Состояния для презентаций
-    const [presentations, setPresentations] = useState(student.presentations || 0);
-    const [voicedPresentations, setVoicedPresentations] = useState(student.voicedPresentations || 0);
+    const [presentations, setPresentations] = useState(student.presentations?.toString() || '');
+    const [voicedPresentations, setVoicedPresentations] = useState(student.voicedPresentations?.toString() || '');
 
     // Состояния расчета
     const [calculationStep, setCalculationStep] = useState('initial');
     const [baseScore, setBaseScore] = useState(student.baseScore || 0);
-    const [closedLabs, setClosedLabs] = useState(student.closedLabs || 0);
-    const [bonusPoints, setBonusPoints] = useState(student.bonusPoints || 0);
+    const [closedLabs, setClosedLabs] = useState(student.closedLabs?.toString() || '');
+    const [bonusPoints, setBonusPoints] = useState(student.bonusPoints?.toString() || '');
     const [isSaving, setIsSaving] = useState(false);
 
+    // Парсинг значений с учетом пустых строк
+    const parseValue = (value) => {
+        if (value === '') return 0;
+        const num = Number(value);
+        return Math.min(10, Math.max(0, isNaN(num) ? 0 : num));
+    };
+
     // Мемоизированные бонусы
-    const {scienceBonuses, presentationBonuses, totalBonuses} = useMemo(() => {
-        const sci = publishedWorks + oralReports + awards;
-        const pres = presentations + voicedPresentations;
+    const { scienceBonuses, presentationBonuses, totalBonuses } = useMemo(() => {
+        const sci = parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards);
+        const pres = parseValue(presentations) + parseValue(voicedPresentations);
         return {
             scienceBonuses: sci,
             presentationBonuses: pres,
@@ -41,19 +49,34 @@ const DayForm = ({student, onStudentUpdate}) => {
         };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
+    // Обработчики изменений
+    const handleLabChange = (index, value) => {
+        const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
+        const newLabs = [...labs];
+        newLabs[index] = newValue.toString();
+        setLabs(newLabs);
+    };
+
+    const handleTestChange = (index, value) => {
+        const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
+        const newTests = [...tests];
+        newTests[index] = newValue.toString();
+        setTests(newTests);
+    };
+
     // Расчет базового балла
     const calculateBaseScore = () => {
-        let score = 0;
-        const skipPenalty = Math.floor(Number(skippedHours) / 2) * 0.5;
-        const notesBonus = Number(notesVolume) >= 70 ? 1 : 0;
-        const labAvg = labs.reduce((sum, val) => sum + Number(val), 0) / 4;
-        const testAvg = tests.reduce((sum, val) => sum + Number(val), 0) / 3;
+        const skipPenalty = Math.floor(parseValue(skippedHours) / 2) * 0.5;
+        const notesBonus = parseValue(notesVolume) >= 70 ? 1 : 0;
+        const parsedLabs = labs.map(parseValue);
+        const parsedTests = tests.map(parseValue);
 
-        score = (labAvg + testAvg) / 2;
-        score += notesBonus;
-        score -= skipPenalty;
+        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / 4;
+        const testAvg = parsedTests.reduce((sum, val) => sum + val, 0) / 3;
 
-        if (Number(urgentPublications) > 0) {
+        let score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
+
+        if (parseValue(urgentPublications) > 0) {
             score = Math.max(score, 8);
         }
 
@@ -62,28 +85,28 @@ const DayForm = ({student, onStudentUpdate}) => {
 
     // Расчет итогового балла
     const calculateFinalScore = () => {
-        const skipPenalty = Math.floor(Number(skippedHours) / 2) * 0.5;
-        const notesBonus = Number(notesVolume) >= 70 ? 1 : 0;
-        const actualClosedLabs = Math.min(closedLabs, 4);
+        const skipPenalty = Math.floor(parseValue(skippedHours) / 2) * 0.5;
+        const notesBonus = parseValue(notesVolume) >= 70 ? 1 : 0;
+        const actualClosedLabs = Math.min(parseValue(closedLabs), 4);
 
         let labAvg;
         if (actualClosedLabs === 4) {
             labAvg = 10;
         } else {
             const activeLabsCount = 4 - actualClosedLabs;
-            const activeLabs = labs.slice(0, activeLabsCount);
-            const labSum = activeLabs.reduce((sum, val) => sum + Number(val), 0);
+            const activeLabs = labs.slice(0, activeLabsCount).map(parseValue);
+            const labSum = activeLabs.reduce((sum, val) => sum + val, 0);
             labAvg = activeLabsCount > 0 ? labSum / activeLabsCount : 0;
         }
 
-        const testAvg = tests.reduce((sum, val) => sum + Number(val), 0) / 3;
+        const testAvg = tests.map(parseValue).reduce((sum, val) => sum + val, 0) / 3;
         let score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
 
-        if (Number(urgentPublications) > 0) {
+        if (parseValue(urgentPublications) > 0) {
             score = Math.max(score, 8);
         }
 
-        score += Number(bonusPoints);
+        score += parseValue(bonusPoints);
 
         return Math.min(Math.max(score, 0), 10);
     };
@@ -94,26 +117,26 @@ const DayForm = ({student, onStudentUpdate}) => {
         setCalculationStep('distribution');
     };
 
-    // Сохранение данных с улучшенной обработкой
+    // Сохранение данных
     const handleSave = async () => {
         setIsSaving(true);
 
         try {
             const finalScore = calculateFinalScore();
             const evaluationData = {
-                skippedHours: Number(skippedHours),
-                notesVolume: Number(notesVolume),
-                labs: labs.map(Number),
-                tests: tests.map(Number),
-                writtenWorks: Number(writtenWorks),
-                publishedWorks: Number(publishedWorks),
-                oralReports: Number(oralReports),
-                urgentPublications: Number(urgentPublications),
-                awards: Number(awards),
-                presentations: Number(presentations),
-                voicedPresentations: Number(voicedPresentations),
-                closedLabs: Number(closedLabs),
-                bonusPoints: Number(bonusPoints),
+                skippedHours: parseValue(skippedHours),
+                notesVolume: parseValue(notesVolume),
+                labs: labs.map(parseValue),
+                tests: tests.map(parseValue),
+                writtenWorks: parseValue(writtenWorks),
+                publishedWorks: parseValue(publishedWorks),
+                oralReports: parseValue(oralReports),
+                urgentPublications: parseValue(urgentPublications),
+                awards: parseValue(awards),
+                presentations: parseValue(presentations),
+                voicedPresentations: parseValue(voicedPresentations),
+                closedLabs: parseValue(closedLabs),
+                bonusPoints: parseValue(bonusPoints),
                 baseScore: calculateBaseScore(),
                 result: finalScore,
                 lastUpdated: new Date().toISOString()
@@ -123,9 +146,7 @@ const DayForm = ({student, onStudentUpdate}) => {
 
             if (updatedStudent) {
                 alert(`Данные студента ${updatedStudent.fullName} успешно сохранены!\nИтоговая оценка: ${finalScore.toFixed(1)}`);
-                onStudentUpdate?.(); // Обновляем родительский компонент
-            } else {
-                throw new Error('Не удалось сохранить данные');
+                onStudentUpdate?.();
             }
         } catch (error) {
             console.error('Ошибка сохранения:', error);
@@ -141,7 +162,12 @@ const DayForm = ({student, onStudentUpdate}) => {
 
             {calculationStep === 'initial' ? (
                 <>
-                    <AttendanceBlock {...{skippedHours, setSkippedHours, notesVolume, setNotesVolume}} />
+                    <AttendanceBlock
+                        skippedHours={skippedHours}
+                        setSkippedHours={setSkippedHours}
+                        notesVolume={notesVolume}
+                        setNotesVolume={setNotesVolume}
+                    />
 
                     <div className="section">
                         <h3>Лабораторные работы</h3>
@@ -150,13 +176,15 @@ const DayForm = ({student, onStudentUpdate}) => {
                                 <label>Лаб {index + 1}:
                                     <input
                                         type="number"
+                                        className="no-spin"
                                         min="0"
                                         max="10"
                                         value={lab}
-                                        onChange={e => {
-                                            const newLabs = [...labs];
-                                            newLabs[index] = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-                                            setLabs(newLabs);
+                                        onChange={e => handleLabChange(index, e.target.value)}
+                                        onBlur={e => {
+                                            if (e.target.value === '') {
+                                                handleLabChange(index, '0');
+                                            }
                                         }}
                                     />
                                 </label>
@@ -171,13 +199,15 @@ const DayForm = ({student, onStudentUpdate}) => {
                                 <label>Тест {index + 1}:
                                     <input
                                         type="number"
+                                        className="no-spin"
                                         min="0"
                                         max="10"
                                         value={test}
-                                        onChange={e => {
-                                            const newTests = [...tests];
-                                            newTests[index] = Math.max(0, Math.min(10, Number(e.target.value) || 0));
-                                            setTests(newTests);
+                                        onChange={e => handleTestChange(index, e.target.value)}
+                                        onBlur={e => {
+                                            if (e.target.value === '') {
+                                                handleTestChange(index, '0');
+                                            }
                                         }}
                                     />
                                 </label>
@@ -185,18 +215,27 @@ const DayForm = ({student, onStudentUpdate}) => {
                         ))}
                     </div>
 
-                    <ScienceBlock {...{
-                        writtenWorks, setWrittenWorks,
-                        publishedWorks, setPublishedWorks,
-                        oralReports, setOralReports,
-                        urgentPublications, setUrgentPublications,
-                        awards, setAwards
-                    }} />
+                    <ScienceBlock
+                        inputClassName="no-spin"
+                        writtenWorks={writtenWorks}
+                        setWrittenWorks={setWrittenWorks}
+                        publishedWorks={publishedWorks}
+                        setPublishedWorks={setPublishedWorks}
+                        oralReports={oralReports}
+                        setOralReports={setOralReports}
+                        urgentPublications={urgentPublications}
+                        setUrgentPublications={setUrgentPublications}
+                        awards={awards}
+                        setAwards={setAwards}
+                    />
 
-                    <PresentationBlock {...{
-                        presentations, setPresentations,
-                        voicedPresentations, setVoicedPresentations
-                    }} />
+                    <PresentationBlock
+                        inputClassName="no-spin"
+                        presentations={presentations}
+                        setPresentations={setPresentations}
+                        voicedPresentations={voicedPresentations}
+                        setVoicedPresentations={setVoicedPresentations}
+                    />
 
                     <button
                         className="calculate-btn"
@@ -217,14 +256,14 @@ const DayForm = ({student, onStudentUpdate}) => {
                         </div>
                     </div>
 
-                    <BonusDistribution {...{
-                        totalBonuses,
-                        closedLabs,
-                        setClosedLabs,
-                        bonusPoints,
-                        setBonusPoints,
-                        maxLabsToClose: 4
-                    }} />
+                    <BonusDistribution
+                        totalBonuses={totalBonuses}
+                        closedLabs={closedLabs}
+                        setClosedLabs={setClosedLabs}
+                        bonusPoints={bonusPoints}
+                        setBonusPoints={setBonusPoints}
+                        maxLabsToClose={4}
+                    />
 
                     <div className="final-score">
                         <h3>Итоговая оценка: {calculateFinalScore().toFixed(1)}</h3>

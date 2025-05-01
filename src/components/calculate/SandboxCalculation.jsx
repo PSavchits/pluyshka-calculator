@@ -3,74 +3,69 @@ import AttendanceBlock from './blocks/AttendanceBlock';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
+import '../../styles/sandbox.css';
 
 const SandboxCalculation = ({ show, onClose }) => {
     const [formType, setFormType] = useState('Дневная');
-
-    // Общие состояния
-    const [labs, setLabs] = useState([0, 0, 0, 0]);
-    const [tests, setTests] = useState([0, 0, 0]);
-
-    // Состояния для научной деятельности
-    const [writtenWorks, setWrittenWorks] = useState(0);
-    const [publishedWorks, setPublishedWorks] = useState(0);
-    const [oralReports, setOralReports] = useState(0);
-    const [urgentPublications, setUrgentPublications] = useState(0);
-    const [awards, setAwards] = useState(0);
-
-    // Состояния для презентаций
-    const [presentations, setPresentations] = useState(0);
-    const [voicedPresentations, setVoicedPresentations] = useState(0);
-
-    // Состояния для дневной формы
-    const [skippedHours, setSkippedHours] = useState(0);
-    const [notesVolume, setNotesVolume] = useState(0);
-    const [closedLabs, setClosedLabs] = useState(0);
-
-    // Состояния для расчета
-    const [bonusPoints, setBonusPoints] = useState(0);
+    const [labs, setLabs] = useState(['', '', '', '']);
+    const [tests, setTests] = useState(['', '', '']);
+    const [writtenWorks, setWrittenWorks] = useState('');
+    const [publishedWorks, setPublishedWorks] = useState('');
+    const [oralReports, setOralReports] = useState('');
+    const [urgentPublications, setUrgentPublications] = useState('');
+    const [awards, setAwards] = useState('');
+    const [presentations, setPresentations] = useState('');
+    const [voicedPresentations, setVoicedPresentations] = useState('');
+    const [skippedHours, setSkippedHours] = useState('');
+    const [notesVolume, setNotesVolume] = useState('');
+    const [closedLabs, setClosedLabs] = useState('');
+    const [bonusPoints, setBonusPoints] = useState('');
     const [result, setResult] = useState(null);
 
-    // Сброс состояний при изменении типа формы
+    const parseValue = (value) => value === '' ? 0 : Math.min(10, Math.max(0, Number(value) || 0));
     useEffect(() => {
-        setLabs(formType === 'Дневная' ? [0, 0, 0, 0] : [0, 0]);
-        setClosedLabs(0);
-        setBonusPoints(0);
+        if(formType === 'Дневная') {
+            setLabs(['', '', '', '']);
+            setTests(['', '', '']);
+        } else {
+            setLabs(['', '']);
+            setTests([]);
+        }
+        setClosedLabs('');
+        setBonusPoints('');
         setResult(null);
     }, [formType]);
 
     const calculateResult = () => {
         let score = 0;
 
-        // Общие параметры
-        const sciBonus = publishedWorks + oralReports + awards;
-        const presBonus = presentations + voicedPresentations;
-        const totalBonuses = sciBonus + presBonus;
+        const parsedLabs = labs.map(parseValue);
+        const parsedTests = formType === 'Дневная' ? tests.map(parseValue) : [];
+        const parsedSkipped = parseValue(skippedHours);
+        const parsedNotes = parseValue(notesVolume);
+        const parsedClosedLabs = parseValue(closedLabs);
+        const parsedBonus = parseValue(bonusPoints);
+        const parsedUrgent = parseValue(urgentPublications);
 
         if(formType === 'Дневная') {
-            // Расчет для дневной формы
-            const skipPenalty = Math.floor(skippedHours / 2) * 0.5;
-            const notesBonus = notesVolume >= 70 ? 1 : 0;
-
-            const activeLabsCount = 4 - Math.min(closedLabs, 4);
-            const activeLabs = labs.slice(0, activeLabsCount);
+            const skipPenalty = Math.floor(parsedSkipped / 2) * 0.5;
+            const notesBonus = parsedNotes >= 70 ? 1 : 0;
+            const activeLabsCount = 4 - Math.min(parsedClosedLabs, 4);
+            const activeLabs = parsedLabs.slice(0, activeLabsCount);
 
             const labAvg = activeLabsCount > 0
                 ? activeLabs.reduce((a, b) => a + b, 0) / activeLabsCount
                 : 0;
 
-            const testAvg = tests.reduce((a, b) => a + b, 0) / 3;
+            const testAvg = parsedTests.reduce((a, b) => a + b, 0) / 3;
 
             score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
-
-            if(urgentPublications > 0) score = Math.max(score, 8);
-            score += bonusPoints;
-
+            if(parsedUrgent > 0) score = Math.max(score, 8);
+            score += parsedBonus;
         } else {
-            // Расчет для дистанционной формы
-            const labAvg = labs.reduce((a, b) => a + b, 0) / 2;
-            score = labAvg + bonusPoints;
-            if(urgentPublications > 0) score = Math.max(score, 8);
+            const labAvg = parsedLabs.reduce((a, b) => a + b, 0) / 2;
+            score = labAvg + parsedBonus;
+            if(parsedUrgent > 0) score = Math.max(score, 8);
         }
 
         setResult(Math.min(Math.max(score, 0), 10).toFixed(1));
@@ -78,20 +73,26 @@ const SandboxCalculation = ({ show, onClose }) => {
 
     const handleReset = () => {
         setFormType('Дневная');
-        setLabs([0, 0, 0, 0]);
-        setTests([0, 0, 0]);
-        setWrittenWorks(0);
-        setPublishedWorks(0);
-        setOralReports(0);
-        setUrgentPublications(0);
-        setAwards(0);
-        setPresentations(0);
-        setVoicedPresentations(0);
-        setSkippedHours(0);
-        setNotesVolume(0);
-        setClosedLabs(0);
-        setBonusPoints(0);
+        setLabs(['', '', '', '']);
+        setTests(['', '', '']);
+        setWrittenWorks('');
+        setPublishedWorks('');
+        setOralReports('');
+        setUrgentPublications('');
+        setAwards('');
+        setPresentations('');
+        setVoicedPresentations('');
+        setSkippedHours('');
+        setNotesVolume('');
+        setClosedLabs('');
+        setBonusPoints('');
         setResult(null);
+    };
+
+    const handleArrayChange = (array, setter, index, value, max) => {
+        const newArray = [...array];
+        newArray[index] = value === '' ? '' : Math.min(max, Math.max(0, Number(value) || 0));
+        setter(newArray);
     };
 
     if(!show) return null;
@@ -116,7 +117,6 @@ const SandboxCalculation = ({ show, onClose }) => {
                 </div>
 
                 <div className="sections-container">
-                    {/* Блок лабораторных работ */}
                     <div className="section">
                         <h3>Лабораторные работы</h3>
                         {labs.map((lab, index) => (
@@ -124,15 +124,17 @@ const SandboxCalculation = ({ show, onClose }) => {
                                 <label>Лаб {index + 1}:
                                     <input
                                         type="number"
+                                        className="no-spin"
                                         min="0"
                                         max="10"
                                         value={lab}
-                                        onChange={(e) => {
-                                            const newLabs = [...labs];
-                                            newLabs[index] = Math.max(0,
-                                                Math.min(10, parseInt(e.target.value) || 0)
-                                            );
-                                            setLabs(newLabs);
+                                        onChange={(e) =>
+                                            handleArrayChange(labs, setLabs, index, e.target.value, 10)
+                                        }
+                                        onBlur={(e) => {
+                                            if(e.target.value === '') {
+                                                handleArrayChange(labs, setLabs, index, '0', 10);
+                                            }
                                         }}
                                     />
                                 </label>
@@ -140,31 +142,33 @@ const SandboxCalculation = ({ show, onClose }) => {
                         ))}
                     </div>
 
-                    {/* Блок тестов */}
-                    <div className="section">
-                        <h3>Тесты</h3>
-                        {tests.map((test, index) => (
-                            <div className="input-group" key={index}>
-                                <label>Тест {index + 1}:
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        max="10"
-                                        value={test}
-                                        onChange={(e) => {
-                                            const newTests = [...tests];
-                                            newTests[index] = Math.max(0,
-                                                Math.min(10, parseInt(e.target.value) || 0)
-                                            );
-                                            setTests(newTests);
-                                        }}
-                                    />
-                                </label>
-                            </div>
-                        ))}
-                    </div>
+                    {formType === 'Дневная' && (
+                        <div className="section">
+                            <h3>Тесты</h3>
+                            {tests.map((test, index) => (
+                                <div className="input-group" key={index}>
+                                    <label>Тест {index + 1}:
+                                        <input
+                                            type="number"
+                                            className="no-spin"
+                                            min="0"
+                                            max="10"
+                                            value={test}
+                                            onChange={(e) =>
+                                                handleArrayChange(tests, setTests, index, e.target.value, 10)
+                                            }
+                                            onBlur={(e) => {
+                                                if(e.target.value === '') {
+                                                    handleArrayChange(tests, setTests, index, '0', 10);
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                    {/* Компоненты только для дневной формы */}
                     {formType === 'Дневная' && (
                         <AttendanceBlock
                             skippedHours={skippedHours}
@@ -174,7 +178,6 @@ const SandboxCalculation = ({ show, onClose }) => {
                         />
                     )}
 
-                    {/* Общие компоненты */}
                     <ScienceBlock
                         writtenWorks={writtenWorks}
                         setWrittenWorks={setWrittenWorks}
@@ -195,9 +198,8 @@ const SandboxCalculation = ({ show, onClose }) => {
                         setVoicedPresentations={setVoicedPresentations}
                     />
 
-                    {/* Распределение бонусов */}
                     <BonusDistribution
-                        totalBonuses={publishedWorks + oralReports + awards + presentations + voicedPresentations}
+                        totalBonuses={parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards) + parseValue(presentations) + parseValue(voicedPresentations)}
                         closedLabs={formType === 'Дневная' ? closedLabs : 0}
                         setClosedLabs={formType === 'Дневная' ? setClosedLabs : () => {}}
                         bonusPoints={bonusPoints}

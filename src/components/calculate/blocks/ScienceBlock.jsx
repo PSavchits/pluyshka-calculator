@@ -11,74 +11,159 @@ const ScienceBlock = ({
                           setUrgentPublications,
                           awards,
                           setAwards
-                      }) => (
-    <div className="science-block section">
-        <h3>Научная деятельность</h3>
+                      }) => {
+    const handleWrittenWorksChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setWrittenWorks('');
+            return;
+        }
+        const value = Math.max(0, parseInt(rawValue) || 0);
+        setWrittenWorks(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Написано работ:
-                <input
-                    type="number"
-                    min="0"
-                    value={writtenWorks}
-                    onChange={e => setWrittenWorks(Math.max(0, parseInt(e.target.value) || 0))}
-                />
-            </label>
-        </div>
+    const handlePublishedWorksChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setPublishedWorks('');
+            return;
+        }
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            writtenWorks
+        ));
+        setPublishedWorks(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Опубликовано работ:
-                <input
-                    type="number"
-                    min="0"
-                    max={writtenWorks}
-                    value={publishedWorks}
-                    onChange={e => setPublishedWorks(Math.max(0, Math.min(writtenWorks, parseInt(e.target.value) || 0)))}
-                />
-            </label>
-        </div>
+    const handleOralReportsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setOralReports('');
+            return;
+        }
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            writtenWorks
+        ));
+        setOralReports(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Работ с устным докладом:
-                <input
-                    type="number"
-                    min="0"
-                    max={writtenWorks}
-                    value={oralReports}
-                    onChange={e => setOralReports(Math.max(0, Math.min(writtenWorks, parseInt(e.target.value) || 0)))}
-                />
-            </label>
-        </div>
+    const handleUrgentPublicationsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setUrgentPublications('');
+            return;
+        }
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            writtenWorks
+        ));
+        setUrgentPublications(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Срочных публикаций:
-                <input
-                    type="number"
-                    min="0"
-                    max={writtenWorks}
-                    value={urgentPublications}
-                    onChange={e => setUrgentPublications(Math.max(0, Math.min(writtenWorks, parseInt(e.target.value) || 0)))}
-                />
-            </label>
-        </div>
+    const handleAwardsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setAwards('');
+            return;
+        }
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            writtenWorks
+        ));
+        setAwards(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Наград за работы:
-                <input
-                    type="number"
-                    min="0"
-                    max={writtenWorks}
-                    value={awards}
-                    onChange={e => setAwards(Math.max(0, Math.min(writtenWorks, parseInt(e.target.value) || 0)))}
-                />
-            </label>
+    return (
+        <div className="science-block section">
+            <h3>Научная деятельность</h3>
+
+            <div className="input-group">
+                <label>
+                    Написано работ:
+                    <input
+                        type="number"
+                        min="0"
+                        value={writtenWorks}
+                        onChange={handleWrittenWorksChange}
+                        onBlur={() => {
+                            if (writtenWorks === '') setWrittenWorks(0);
+                        }}
+                        placeholder="0-∞"
+                        className="no-spin"
+                    />
+                </label>
+            </div>
+
+            <div className="input-group">
+                <label>
+                    Опубликовано работ:
+                    <input
+                        type="number"
+                        min="0"
+                        value={publishedWorks}
+                        onChange={handlePublishedWorksChange}
+                        onBlur={() => {
+                            if (publishedWorks === '') setPublishedWorks(0);
+                        }}
+                        placeholder={`0-${writtenWorks}`}
+                        className="no-spin"
+                    />
+                </label>
+            </div>
+
+            <div className="input-group">
+                <label>
+                    Работ с устным докладом:
+                    <input
+                        type="number"
+                        min="0"
+                        value={oralReports}
+                        onChange={handleOralReportsChange}
+                        onBlur={() => {
+                            if (oralReports === '') setOralReports(0);
+                        }}
+                        placeholder={`0-${writtenWorks}`}
+                        className="no-spin"
+                    />
+                </label>
+            </div>
+
+            <div className="input-group">
+                <label>
+                    Срочных публикаций:
+                    <input
+                        type="number"
+                        min="0"
+                        value={urgentPublications}
+                        onChange={handleUrgentPublicationsChange}
+                        onBlur={() => {
+                            if (urgentPublications === '') setUrgentPublications(0);
+                        }}
+                        placeholder={`0-${writtenWorks}`}
+                        className="no-spin"
+                    />
+                </label>
+            </div>
+
+            <div className="input-group">
+                <label>
+                    Наград за работы:
+                    <input
+                        type="number"
+                        min="0"
+                        value={awards}
+                        onChange={handleAwardsChange}
+                        onBlur={() => {
+                            if (awards === '') setAwards(0);
+                        }}
+                        placeholder={`0-${writtenWorks}`}
+                        className="no-spin"
+                    />
+                </label>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default ScienceBlock;

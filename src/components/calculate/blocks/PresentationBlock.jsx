@@ -5,35 +5,71 @@ const PresentationBlock = ({
                                setPresentations,
                                voicedPresentations,
                                setVoicedPresentations
-                           }) => (
-    <div className="presentation-block section">
-        <h3>Презентации</h3>
+                           }) => {
+    const handlePresentationsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setPresentations('');
+            return;
+        }
 
-        <div className="input-group">
-            <label>
-                Создано презентаций:
-                <input
-                    type="number"
-                    min="0"
-                    value={presentations}
-                    onChange={e => setPresentations(Math.max(0, parseInt(e.target.value) || 0))}
-                />
-            </label>
-        </div>
+        const value = Math.max(0, parseInt(rawValue) || 0);
+        setPresentations(value);
+    };
 
-        <div className="input-group">
-            <label>
-                Презентаций с озвучкой:
-                <input
-                    type="number"
-                    min="0"
-                    max={presentations}
-                    value={voicedPresentations}
-                    onChange={e => setVoicedPresentations(Math.max(0, Math.min(presentations, parseInt(e.target.value) || 0)))}
-                />
-            </label>
+    const handleVoicedChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setVoicedPresentations('');
+            return;
+        }
+
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            presentations
+        ));
+        setVoicedPresentations(value);
+    };
+
+    return (
+        <div className="presentation-block section">
+            <h3>Презентации</h3>
+
+            <div className="input-group">
+                <label>
+                    Создано презентаций:
+                    <input
+                        type="number"
+                        min="0"
+                        value={presentations}
+                        onChange={handlePresentationsChange}
+                        onBlur={() => {
+                            if (presentations === '') setPresentations(0);
+                        }}
+                        placeholder="0-∞"
+                        className="no-spin"
+                    />
+                </label>
+            </div>
+
+            <div className="input-group">
+                <label>
+                    Презентаций с озвучкой:
+                    <input
+                        type="number"
+                        min="0"
+                        value={voicedPresentations}
+                        onChange={handleVoicedChange}
+                        onBlur={() => {
+                            if (voicedPresentations === '') setVoicedPresentations(0);
+                        }}
+                        placeholder={`0-${presentations}`}
+                        className="no-spin"
+                    />
+                </label>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export default PresentationBlock;

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import '../../../styles/global.css';
 
 const BonusDistribution = ({
                                totalBonuses,
@@ -12,15 +13,42 @@ const BonusDistribution = ({
     const usedBonuses = isRemote ? bonusPoints : closedLabs + bonusPoints;
     const remainingBonuses = totalBonuses - usedBonuses;
 
-    // Автоматическая коррекция значений
+    const handleClosedLabsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setClosedLabs('');
+            return;
+        }
+
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            totalBonuses,
+            maxLabsToClose
+        ));
+        setClosedLabs(value);
+    };
+
+    const handleBonusPointsChange = (e) => {
+        const rawValue = e.target.value;
+        if (rawValue === '') {
+            setBonusPoints('');
+            return;
+        }
+
+        const max = isRemote ? totalBonuses : totalBonuses - closedLabs;
+        const value = Math.max(0, Math.min(
+            parseInt(rawValue) || 0,
+            max
+        ));
+        setBonusPoints(value);
+    };
+
     useEffect(() => {
         if (isRemote) {
-            // Для ДО: корректируем только бонусные баллы
             if (bonusPoints > totalBonuses) {
                 setBonusPoints(totalBonuses);
             }
         } else {
-            // Для дневной формы
             if (closedLabs > totalBonuses) {
                 const newClosedLabs = Math.min(closedLabs, totalBonuses);
                 setClosedLabs(newClosedLabs);
@@ -35,22 +63,19 @@ const BonusDistribution = ({
 
             {!isRemote && (
                 <div className="distribution-controls">
-                    <div className="control-group">
+                    <div className="input-group">
                         <label>
                             Закрыть лабораторных работ:
                             <input
                                 type="number"
                                 min="0"
-                                max={Math.min(maxLabsToClose, totalBonuses)}
                                 value={closedLabs}
-                                onChange={e => {
-                                    const value = Math.max(0, Math.min(
-                                        parseInt(e.target.value) || 0,
-                                        totalBonuses,
-                                        maxLabsToClose
-                                    ));
-                                    setClosedLabs(value);
+                                onChange={handleClosedLabsChange}
+                                onBlur={() => {
+                                    if (closedLabs === '') setClosedLabs(0);
                                 }}
+                                placeholder={`0-${maxLabsToClose}`}
+                                className="no-spin"
                             />
                             <span className="hint">(макс. {maxLabsToClose})</span>
                         </label>
@@ -59,26 +84,23 @@ const BonusDistribution = ({
             )}
 
             <div className="distribution-controls">
-                <div className="control-group">
+                <div className="input-group">
                     <label>
                         Добавить баллов к оценке:
                         <input
                             type="number"
                             min="0"
-                            max={isRemote ? totalBonuses : totalBonuses - closedLabs}
                             value={bonusPoints}
-                            onChange={e => {
-                                const max = isRemote ? totalBonuses : totalBonuses - closedLabs;
-                                const value = Math.max(0, Math.min(
-                                    parseInt(e.target.value) || 0,
-                                    max
-                                ));
-                                setBonusPoints(value);
+                            onChange={handleBonusPointsChange}
+                            onBlur={() => {
+                                if (bonusPoints === '') setBonusPoints(0);
                             }}
+                            placeholder={`0-${isRemote ? totalBonuses : totalBonuses - closedLabs}`}
+                            className="no-spin"
                         />
                         <span className="hint">
-                            (доступно: {isRemote ? totalBonuses : totalBonuses - closedLabs})
-                        </span>
+              (доступно: {isRemote ? totalBonuses : totalBonuses - closedLabs})
+            </span>
                     </label>
                 </div>
             </div>
