@@ -65,11 +65,6 @@ const RemoteForm = ({ student }) => {
         setLabs(newLabs);
     };
 
-    const handleInitialCalculation = () => {
-        setBaseScore(calculateBaseScore());
-        setCalculationStep('distribution');
-    };
-
     const handleSave = async () => {
         const finalScore = calculateFinalScore();
         const updated = await updateStudentEvaluation(student.id, finalScore);
