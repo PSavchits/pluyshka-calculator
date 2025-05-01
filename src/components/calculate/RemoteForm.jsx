@@ -6,6 +6,7 @@ import BonusDistribution from './blocks/BonusDistribution';
 import '../../styles/dayform.css';
 
 const RemoteForm = ({ student }) => {
+    // Состояния с пустыми строками вместо 0
     const [labs, setLabs] = useState(['', '']);
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
@@ -19,6 +20,7 @@ const RemoteForm = ({ student }) => {
     const [bonusPoints, setBonusPoints] = useState('');
     const [notification, setNotification] = useState(null);
 
+    // Парсинг значений с учетом пустых строк
     const parseValue = (value) => {
         if (value === '') return 0;
         const num = Number(value);
@@ -28,7 +30,11 @@ const RemoteForm = ({ student }) => {
     const { scienceBonuses, presentationBonuses, totalBonuses } = useMemo(() => {
         const sci = parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards);
         const pres = parseValue(presentations) + parseValue(voicedPresentations);
-        return { scienceBonuses: sci, presentationBonuses: pres, totalBonuses: sci + pres };
+        return {
+            scienceBonuses: sci,
+            presentationBonuses: pres,
+            totalBonuses: sci + pres
+        };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
     const calculateBaseScore = () => {
@@ -47,6 +53,11 @@ const RemoteForm = ({ student }) => {
         return Math.min(Math.max(score, 0), 10);
     };
 
+    const handleInitialCalculation = () => {
+        setBaseScore(calculateBaseScore());
+        setCalculationStep('distribution');
+    };
+
     const handleLabChange = (index, value) => {
         const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
         const newLabs = [...labs];
@@ -60,45 +71,9 @@ const RemoteForm = ({ student }) => {
     };
 
     const handleSave = async () => {
-        try {
-            const finalScore = calculateFinalScore();
-            const data = {
-                labs: labs.map(parseValue),
-                writtenWorks: parseValue(writtenWorks),
-                publishedWorks: parseValue(publishedWorks),
-                oralReports: parseValue(oralReports),
-                urgentPublications: parseValue(urgentPublications),
-                awards: parseValue(awards),
-                presentations: parseValue(presentations),
-                voicedPresentations: parseValue(voicedPresentations),
-                bonusPoints: parseValue(bonusPoints),
-                result: finalScore,
-                form: 'ДО'
-            };
-
-            const updated = await updateStudentEvaluation(student.id, data);
-
-            setNotification({
-                type: 'success',
-                title: '✅ Данные сохранены',
-                content: (
-                    <>
-                        Успешно сохранены данные для <strong>{updated.fullName}</strong>
-                        <div style={{ marginTop: '8px' }}>
-                            Итоговая оценка: <strong>{finalScore.toFixed(1)}</strong>
-                        </div>
-                    </>
-                )
-            });
-            setTimeout(() => setNotification(null), 5000);
-
-        } catch (error) {
-            setNotification({
-                type: 'error',
-                title: '⛔ Ошибка сохранения',
-                content: error.message || 'Не удалось сохранить данные'
-            });
-        }
+        const finalScore = calculateFinalScore();
+        const updated = await updateStudentEvaluation(student.id, finalScore);
+        alert(`Сохранено: ${updated.fullName} — Оценка: ${finalScore.toFixed(1)}`);
     };
 
     return (
