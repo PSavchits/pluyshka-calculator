@@ -8,7 +8,7 @@ import './styles/global.css'
 function App() {
   return (
       <div>
-          <h1>Плюшка-Калькулятор</h1>
+          <h1>Плюшка<span className="hidden-hyphen">-</span>Калькулятор</h1>
           <FileUpload/>
           <CalculationForm/>
           <ExportGroup/>

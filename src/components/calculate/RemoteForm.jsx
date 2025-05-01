@@ -3,9 +3,9 @@ import { updateStudentEvaluation } from '../../utils/db';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
+import '../../styles/dayform.css';
 
 const RemoteForm = ({ student }) => {
-    // Состояния с пустыми строками вместо 0
     const [labs, setLabs] = useState(['', '']);
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
@@ -17,8 +17,8 @@ const RemoteForm = ({ student }) => {
     const [calculationStep, setCalculationStep] = useState('initial');
     const [baseScore, setBaseScore] = useState(0);
     const [bonusPoints, setBonusPoints] = useState('');
+    const [notification, setNotification] = useState(null);
 
-    // Парсинг значений с учетом пустых строк
     const parseValue = (value) => {
         if (value === '') return 0;
         const num = Number(value);
@@ -28,11 +28,7 @@ const RemoteForm = ({ student }) => {
     const { scienceBonuses, presentationBonuses, totalBonuses } = useMemo(() => {
         const sci = parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards);
         const pres = parseValue(presentations) + parseValue(voicedPresentations);
-        return {
-            scienceBonuses: sci,
-            presentationBonuses: pres,
-            totalBonuses: sci + pres
-        };
+        return { scienceBonuses: sci, presentationBonuses: pres, totalBonuses: sci + pres };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
     const calculateBaseScore = () => {
@@ -51,11 +47,6 @@ const RemoteForm = ({ student }) => {
         return Math.min(Math.max(score, 0), 10);
     };
 
-    const handleInitialCalculation = () => {
-        setBaseScore(calculateBaseScore());
-        setCalculationStep('distribution');
-    };
-
     const handleLabChange = (index, value) => {
         const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
         const newLabs = [...labs];
@@ -63,28 +54,77 @@ const RemoteForm = ({ student }) => {
         setLabs(newLabs);
     };
 
+    const handleInitialCalculation = () => {
+        setBaseScore(calculateBaseScore());
+        setCalculationStep('distribution');
+    };
+
     const handleSave = async () => {
-        const finalScore = calculateFinalScore();
-        const data = {
-            labs: labs.map(parseValue),
-            writtenWorks: parseValue(writtenWorks),
-            publishedWorks: parseValue(publishedWorks),
-            oralReports: parseValue(oralReports),
-            urgentPublications: parseValue(urgentPublications),
-            awards: parseValue(awards),
-            presentations: parseValue(presentations),
-            voicedPresentations: parseValue(voicedPresentations),
-            bonusPoints: parseValue(bonusPoints),
-            result: finalScore,
-            form: 'ДО'
-        };
-        const updated = await updateStudentEvaluation(student.id, data);
-        alert(`Сохранено: ${updated.fullName} — Оценка: ${finalScore.toFixed(1)}`);
+        try {
+            const finalScore = calculateFinalScore();
+            const data = {
+                labs: labs.map(parseValue),
+                writtenWorks: parseValue(writtenWorks),
+                publishedWorks: parseValue(publishedWorks),
+                oralReports: parseValue(oralReports),
+                urgentPublications: parseValue(urgentPublications),
+                awards: parseValue(awards),
+                presentations: parseValue(presentations),
+                voicedPresentations: parseValue(voicedPresentations),
+                bonusPoints: parseValue(bonusPoints),
+                result: finalScore,
+                form: 'ДО'
+            };
+
+            const updated = await updateStudentEvaluation(student.id, data);
+
+            setNotification({
+                type: 'success',
+                title: '✅ Данные сохранены',
+                content: (
+                    <>
+                        Успешно сохранены данные для <strong>{updated.fullName}</strong>
+                        <div style={{ marginTop: '8px' }}>
+                            Итоговая оценка: <strong>{finalScore.toFixed(1)}</strong>
+                        </div>
+                    </>
+                )
+            });
+            setTimeout(() => setNotification(null), 5000);
+
+        } catch (error) {
+            setNotification({
+                type: 'error',
+                title: '⛔ Ошибка сохранения',
+                content: error.message || 'Не удалось сохранить данные'
+            });
+        }
     };
 
     return (
         <div className="remote-form">
             <h2>Оценка для {student.fullName} (Дистанционная форма)</h2>
+
+            {notification && (
+                <div className={`notification ${notification.type}`}>
+                    <div className="notification-icon">
+                        {notification.type === 'success' ? '✔' : '⚠'}
+                    </div>
+                    <div className="notification-content">
+                        <h4>{notification.title}</h4>
+                        <div className="notification-message">
+                            {notification.content}
+                        </div>
+                    </div>
+                    <button
+                        className="notification-close"
+                        onClick={() => setNotification(null)}
+                        aria-label="Закрыть уведомление"
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
 
             {calculationStep === 'initial' ? (
                 <>
