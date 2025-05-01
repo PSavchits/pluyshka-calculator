@@ -7,24 +7,17 @@ import BonusDistribution from './blocks/BonusDistribution';
 import '../../styles/dayform.css';
 
 const DayForm = ({ student, onStudentUpdate }) => {
-    // Состояния с пустыми строками вместо 0
     const [skippedHours, setSkippedHours] = useState(student.skippedHours?.toString() || '');
     const [notesVolume, setNotesVolume] = useState(student.notesVolume?.toString() || '');
     const [labs, setLabs] = useState(student.labs?.map(String) || ['', '', '', '']);
     const [tests, setTests] = useState(student.tests?.map(String) || ['', '', '']);
-
-    // Состояния для научной деятельности
     const [writtenWorks, setWrittenWorks] = useState(student.writtenWorks?.toString() || '');
     const [publishedWorks, setPublishedWorks] = useState(student.publishedWorks?.toString() || '');
     const [oralReports, setOralReports] = useState(student.oralReports?.toString() || '');
     const [urgentPublications, setUrgentPublications] = useState(student.urgentPublications?.toString() || '');
     const [awards, setAwards] = useState(student.awards?.toString() || '');
-
-    // Состояния для презентаций
     const [presentations, setPresentations] = useState(student.presentations?.toString() || '');
     const [voicedPresentations, setVoicedPresentations] = useState(student.voicedPresentations?.toString() || '');
-
-    // Состояния расчета
     const [calculationStep, setCalculationStep] = useState('initial');
     const [baseScore, setBaseScore] = useState(student.baseScore || 0);
     const [closedLabs, setClosedLabs] = useState(student.closedLabs?.toString() || '');
@@ -32,21 +25,22 @@ const DayForm = ({ student, onStudentUpdate }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [notification, setNotification] = useState(null);
 
-    // Парсинг значений с учетом пустых строк
     const parseValue = (value) => {
         if (value === '') return 0;
         const num = Number(value);
         return Math.min(10, Math.max(0, isNaN(num) ? 0 : num));
     };
 
-    // Мемоизированные бонусы
     const { scienceBonuses, presentationBonuses, totalBonuses } = useMemo(() => {
         const sci = parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards);
         const pres = parseValue(presentations) + parseValue(voicedPresentations);
-        return { scienceBonuses: sci, presentationBonuses: pres, totalBonuses: sci + pres };
+        return {
+            scienceBonuses: sci,
+            presentationBonuses: pres,
+            totalBonuses: sci + pres
+        };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
-    // Обработчики изменений
     const handleLabChange = (index, value) => {
         const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
         const newLabs = [...labs];
@@ -61,7 +55,6 @@ const DayForm = ({ student, onStudentUpdate }) => {
         setTests(newTests);
     };
 
-    // Расчет базового балла
     const calculateBaseScore = () => {
         const skipPenalty = Math.floor(parseValue(skippedHours) / 2) * 0.5;
         const notesBonus = parseValue(notesVolume) >= 70 ? 1 : 0;
@@ -80,7 +73,6 @@ const DayForm = ({ student, onStudentUpdate }) => {
         return Math.min(Math.max(score, 0), 10);
     };
 
-    // Расчет итогового балла
     const calculateFinalScore = () => {
         const skipPenalty = Math.floor(parseValue(skippedHours) / 2) * 0.5;
         const notesBonus = parseValue(notesVolume) >= 70 ? 1 : 0;
@@ -108,19 +100,36 @@ const DayForm = ({ student, onStudentUpdate }) => {
         return Math.min(Math.max(score, 0), 10);
     };
 
-    // Инициализация расчета
     const handleInitialCalculation = () => {
         setBaseScore(calculateBaseScore());
         setCalculationStep('distribution');
     };
 
-    // Сохранение данных
     const handleSave = async () => {
         setIsSaving(true);
 
         try {
             const finalScore = calculateFinalScore();
-            const updatedStudent = await updateStudentEvaluation(student.id, finalScore);
+            const evaluationData = {
+                skippedHours: parseValue(skippedHours),
+                notesVolume: parseValue(notesVolume),
+                labs: labs.map(parseValue),
+                tests: tests.map(parseValue),
+                writtenWorks: parseValue(writtenWorks),
+                publishedWorks: parseValue(publishedWorks),
+                oralReports: parseValue(oralReports),
+                urgentPublications: parseValue(urgentPublications),
+                awards: parseValue(awards),
+                presentations: parseValue(presentations),
+                voicedPresentations: parseValue(voicedPresentations),
+                closedLabs: parseValue(closedLabs),
+                bonusPoints: parseValue(bonusPoints),
+                baseScore: calculateBaseScore(),
+                result: finalScore,
+                lastUpdated: new Date().toISOString()
+            };
+
+            const updatedStudent = await updateStudentEvaluation(student.id, evaluationData);
 
             if (updatedStudent) {
                 setNotification({
@@ -135,8 +144,10 @@ const DayForm = ({ student, onStudentUpdate }) => {
                         </>
                     )
                 });
-                setTimeout(() => setNotification(null), 5000);
-                onStudentUpdate?.();
+                setTimeout(() => {
+                    setNotification(null);
+                    onStudentUpdate?.();
+                }, 2000);
             }
         } catch (error) {
             setNotification({
@@ -152,6 +163,27 @@ const DayForm = ({ student, onStudentUpdate }) => {
     return (
         <div className="day-form">
             <h2>Оценка для {student.fullName}</h2>
+
+            {notification && (
+                <div className={`notification ${notification.type}`}>
+                    <div className="notification-icon">
+                        {notification.type === 'success' ? '✔' : '⚠'}
+                    </div>
+                    <div className="notification-content">
+                        <h4>{notification.title}</h4>
+                        <div className="notification-message">
+                            {notification.content}
+                        </div>
+                    </div>
+                    <button
+                        className="notification-close"
+                        onClick={() => setNotification(null)}
+                        aria-label="Закрыть уведомление"
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
 
             {calculationStep === 'initial' ? (
                 <>
@@ -174,7 +206,11 @@ const DayForm = ({ student, onStudentUpdate }) => {
                                         max="10"
                                         value={lab}
                                         onChange={e => handleLabChange(index, e.target.value)}
-                                        onBlur={e => lab === '' && handleLabChange(index, '0')}
+                                        onBlur={e => {
+                                            if (e.target.value === '') {
+                                                handleLabChange(index, '0');
+                                            }
+                                        }}
                                     />
                                 </label>
                             </div>
@@ -193,7 +229,11 @@ const DayForm = ({ student, onStudentUpdate }) => {
                                         max="10"
                                         value={test}
                                         onChange={e => handleTestChange(index, e.target.value)}
-                                        onBlur={e => test === '' && handleTestChange(index, '0')}
+                                        onBlur={e => {
+                                            if (e.target.value === '') {
+                                                handleTestChange(index, '0');
+                                            }
+                                        }}
                                     />
                                 </label>
                             </div>
@@ -270,27 +310,6 @@ const DayForm = ({ student, onStudentUpdate }) => {
                         </div>
                     </div>
                 </>
-            )}
-
-            {notification && (
-                <div className={`notification ${notification.type}`}>
-                    <div className="notification-icon">
-                        {notification.type === 'success' ? '✔' : '⚠'}
-                    </div>
-                    <div className="notification-content">
-                        <h4>{notification.title}</h4>
-                        <div className="notification-message">
-                            {notification.content}
-                        </div>
-                    </div>
-                    <button
-                        className="notification-close"
-                        onClick={() => setNotification(null)}
-                        aria-label="Закрыть уведомление"
-                    >
-                        &times;
-                    </button>
-                </div>
             )}
         </div>
     );

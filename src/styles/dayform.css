@@ -14,6 +14,7 @@
     animation: slideIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
     border-left: 4px solid;
     font-family: 'Segoe UI', system-ui, sans-serif;
+    backdrop-filter: blur(2px); /* Добавим размытие фона */
 }
 
 .notification.success {
@@ -34,6 +35,10 @@
     margin-top: 2px;
 }
 
+.notification-content {
+    flex-grow: 1;
+}
+
 .notification-content h4 {
     margin: 0 0 6px;
     font-size: 16px;
@@ -41,7 +46,8 @@
     letter-spacing: 0.02em;
 }
 
-.notification-content p {
+/* Исправляем селектор для сообщения */
+.notification-message {
     margin: 0;
     font-size: 14px;
     line-height: 1.4;
@@ -83,4 +89,14 @@
 
 .notification.error .notification-content strong {
     color: #b42318;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .notification {
+        top: 15px;
+        right: 15px;
+        left: 15px;
+        max-width: none;
+    }
 }

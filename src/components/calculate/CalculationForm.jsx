@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import DayForm from './DayForm';
 import RemoteForm from './RemoteForm';
 import SandboxCalculation from "./SandboxCalculation";
+import '../../styles/dayform.css';
 
 const CalculationForm = () => {
     const [group, setGroup] = useState('');
@@ -13,52 +14,123 @@ const CalculationForm = () => {
     const [selected, setSelected] = useState(null);
     const [formType, setFormType] = useState('Дневная');
     const [showSandbox, setShowSandbox] = useState(false);
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         const fetchGroups = async () => {
-            const allGroups = await getAllGroups();
-            setGroups(allGroups);
+            try {
+                const allGroups = await getAllGroups();
+                setGroups(allGroups);
+            } catch (error) {
+                setNotification({
+                    type: 'error',
+                    title: '⛔ Ошибка загрузки',
+                    content: 'Не удалось загрузить список групп'
+                });
+            }
         };
         fetchGroups();
     }, []);
 
     const handleSearch = async () => {
-        setSelected(null);
-        const students = await getStudentsBySearch(group, fullNamePrefix);
-        setResults(students);
+        try {
+            setSelected(null);
+            const students = await getStudentsBySearch(group, fullNamePrefix);
+            setResults(students);
+
+            if (students.length === 0) {
+                setNotification({
+                    type: 'info',
+                    title: 'Ничего не найдено',
+                    content: 'Студенты по вашему запросу не найдены'
+                });
+            }
+        } catch (error) {
+            setNotification({
+                type: 'error',
+                title: '⛔ Ошибка поиска',
+                content: error.message || 'Не удалось выполнить поиск'
+            });
+        } finally {
+            setTimeout(() => setNotification(null), 5000);
+        }
     };
 
     const handleExport = () => {
-        const currentStudents = results.map(({fullName, groupName, finalMark}) => ({
-            fullName,
-            groupName,
-            finalMark
-        }));
+        try {
+            const currentStudents = results.map(({fullName, groupName, finalMark}) => ({
+                fullName,
+                groupName,
+                finalMark
+            }));
 
-        if (currentStudents.length === 0) {
-            alert('Нет данных для экспорта');
-            return;
+            if (currentStudents.length === 0) {
+                setNotification({
+                    type: 'error',
+                    title: '🚫 Нет данных',
+                    content: 'Нет данных для экспорта'
+                });
+                return;
+            }
+
+            const exportData = currentStudents.map(student => ({
+                'ФИО': student.fullName || 'Не указано',
+                'Группа': student.groupName,
+                'Итоговый балл': student.finalMark ?? 0,
+            }));
+
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+            worksheet['!cols'] = [
+                { width: 30 }, { width: 15 }, { width: 15 }
+            ];
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+            XLSX.writeFile(workbook, `Результаты_${group}_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+            setNotification({
+                type: 'success',
+                title: '✅ Экспорт завершен',
+                content: `Успешно экспортировано ${currentStudents.length} записей`
+            });
+        } catch (error) {
+            setNotification({
+                type: 'error',
+                title: '⛔ Ошибка экспорта',
+                content: error.message || 'Не удалось экспортировать данные'
+            });
+        } finally {
+            setTimeout(() => setNotification(null), 5000);
         }
-
-        const exportData = currentStudents.map(student => ({
-            'ФИО': student.fullName || 'Не указано',
-            'Группа': student.groupName,
-            'Итоговый балл': student.finalMark ?? 0,
-        }));
-
-        const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
-
-        worksheet['!cols'] = [
-            { width: 30 }, { width: 15 }, { width: 15 }
-        ];
-
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-        XLSX.writeFile(workbook, `Результаты_${group}_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
 
     return (
         <div className="calculation-container">
+            {/* Система уведомлений */}
+            {notification && (
+                <div className={`notification ${notification.type}`}>
+                    <div className="notification-icon">
+                        {notification.type === 'success' ? '✔️'
+                            : notification.type === 'error' ? '⚠️'
+                                : 'ℹ️'}
+                    </div>
+                    <div className="notification-content">
+                        <h4>{notification.title}</h4>
+                        <div className="notification-message">
+                            {notification.content}
+                        </div>
+                    </div>
+                    <button
+                        className="notification-close"
+                        onClick={() => setNotification(null)}
+                        aria-label="Закрыть уведомление"
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
+
             <div className="search-section">
                 <h3>Поиск учащегося</h3>
                 <div className="search-controls">
