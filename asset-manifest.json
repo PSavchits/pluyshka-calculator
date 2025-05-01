@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/pluyshka-calculator/static/css/main.e6c13ad2.css",
-    "main.js": "/pluyshka-calculator/static/js/main.fbe98b25.js",
+    "main.css": "/pluyshka-calculator/static/css/main.ca6ff9a7.css",
+    "main.js": "/pluyshka-calculator/static/js/main.1cd23c80.js",
     "static/js/453.07e05254.chunk.js": "/pluyshka-calculator/static/js/453.07e05254.chunk.js",
     "index.html": "/pluyshka-calculator/index.html",
-    "main.e6c13ad2.css.map": "/pluyshka-calculator/static/css/main.e6c13ad2.css.map",
-    "main.fbe98b25.js.map": "/pluyshka-calculator/static/js/main.fbe98b25.js.map",
+    "main.ca6ff9a7.css.map": "/pluyshka-calculator/static/css/main.ca6ff9a7.css.map",
+    "main.1cd23c80.js.map": "/pluyshka-calculator/static/js/main.1cd23c80.js.map",
     "453.07e05254.chunk.js.map": "/pluyshka-calculator/static/js/453.07e05254.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.e6c13ad2.css",
-    "static/js/main.fbe98b25.js"
+    "static/css/main.ca6ff9a7.css",
+    "static/js/main.1cd23c80.js"
   ]
 }
