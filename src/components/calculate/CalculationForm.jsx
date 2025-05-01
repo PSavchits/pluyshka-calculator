@@ -29,16 +29,32 @@ const CalculationForm = () => {
     };
 
     const handleExport = () => {
-        const filtered = results.map(({ fullName, groupName, result, form }) => ({
+        const currentStudents = results.map(({fullName, groupName, finalMark}) => ({
             fullName,
             groupName,
-            form,
-            result,
+            finalMark
         }));
-        const worksheet = XLSX.utils.json_to_sheet(filtered);
+
+        if (currentStudents.length === 0) {
+            alert('Нет данных для экспорта');
+            return;
+        }
+
+        const exportData = currentStudents.map(student => ({
+            'ФИО': student.fullName || 'Не указано',
+            'Группа': student.groupName,
+            'Итоговый балл': student.finalMark ?? 0,
+        }));
+
         const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+        worksheet['!cols'] = [
+            { width: 30 }, { width: 15 }, { width: 15 }
+        ];
+
         XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-        XLSX.writeFile(workbook, `group_${group}_students.xlsx`);
+        XLSX.writeFile(workbook, `Результаты_${group}_${new Date().toISOString().slice(0,10)}.xlsx`);
     };
 
     return (
@@ -89,7 +105,7 @@ const CalculationForm = () => {
                             className="export-button"
                             onClick={handleExport}
                         >
-                            Экспортировать группу
+                            Экспортировать студентов
                         </button>
                     </div>
 

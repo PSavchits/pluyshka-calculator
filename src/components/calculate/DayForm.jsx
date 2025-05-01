@@ -123,26 +123,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
 
         try {
             const finalScore = calculateFinalScore();
-            const evaluationData = {
-                skippedHours: parseValue(skippedHours),
-                notesVolume: parseValue(notesVolume),
-                labs: labs.map(parseValue),
-                tests: tests.map(parseValue),
-                writtenWorks: parseValue(writtenWorks),
-                publishedWorks: parseValue(publishedWorks),
-                oralReports: parseValue(oralReports),
-                urgentPublications: parseValue(urgentPublications),
-                awards: parseValue(awards),
-                presentations: parseValue(presentations),
-                voicedPresentations: parseValue(voicedPresentations),
-                closedLabs: parseValue(closedLabs),
-                bonusPoints: parseValue(bonusPoints),
-                baseScore: calculateBaseScore(),
-                result: finalScore,
-                lastUpdated: new Date().toISOString()
-            };
-
-            const updatedStudent = await updateStudentEvaluation(student.id, evaluationData);
+            const updatedStudent = await updateStudentEvaluation(student.id, finalScore);
 
             if (updatedStudent) {
                 alert(`Данные студента ${updatedStudent.fullName} успешно сохранены!\nИтоговая оценка: ${finalScore.toFixed(1)}`);

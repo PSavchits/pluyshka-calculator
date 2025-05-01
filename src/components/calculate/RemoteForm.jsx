@@ -65,20 +65,7 @@ const RemoteForm = ({ student }) => {
 
     const handleSave = async () => {
         const finalScore = calculateFinalScore();
-        const data = {
-            labs: labs.map(parseValue),
-            writtenWorks: parseValue(writtenWorks),
-            publishedWorks: parseValue(publishedWorks),
-            oralReports: parseValue(oralReports),
-            urgentPublications: parseValue(urgentPublications),
-            awards: parseValue(awards),
-            presentations: parseValue(presentations),
-            voicedPresentations: parseValue(voicedPresentations),
-            bonusPoints: parseValue(bonusPoints),
-            result: finalScore,
-            form: 'ДО'
-        };
-        const updated = await updateStudentEvaluation(student.id, data);
+        const updated = await updateStudentEvaluation(student.id, finalScore);
         alert(`Сохранено: ${updated.fullName} — Оценка: ${finalScore.toFixed(1)}`);
     };
 
