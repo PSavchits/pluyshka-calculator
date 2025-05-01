@@ -1,0 +1,86 @@
+/* Уведомления */
+.notification {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    padding: 18px 25px;
+    border-radius: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    max-width: 420px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    z-index: 10000;
+    animation: slideIn 0.4s cubic-bezier(0.22, 0.61, 0.36, 1);
+    border-left: 4px solid;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.notification.success {
+    background: #f3faf7;
+    border-color: #10b582;
+    color: #0f7358;
+}
+
+.notification.error {
+    background: #fef3f2;
+    border-color: #f04438;
+    color: #b42318;
+}
+
+.notification-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notification-content h4 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.notification-content p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+    opacity: 0.9;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: inherit;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 15px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.notification-close:hover {
+    opacity: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Дополнительные улучшения для текста */
+.notification-content strong {
+    color: #0f7358;
+    font-weight: 600;
+}
+
+.notification.error .notification-content strong {
+    color: #b42318;
+}

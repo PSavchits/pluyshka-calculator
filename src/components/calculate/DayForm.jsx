@@ -4,7 +4,7 @@ import AttendanceBlock from './blocks/AttendanceBlock';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
-import '../../styles/global.css'
+import '../../styles/dayform.css';
 
 const DayForm = ({ student, onStudentUpdate }) => {
     // Состояния с пустыми строками вместо 0
@@ -30,6 +30,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
     const [closedLabs, setClosedLabs] = useState(student.closedLabs?.toString() || '');
     const [bonusPoints, setBonusPoints] = useState(student.bonusPoints?.toString() || '');
     const [isSaving, setIsSaving] = useState(false);
+    const [notification, setNotification] = useState(null);
 
     // Парсинг значений с учетом пустых строк
     const parseValue = (value) => {
@@ -42,11 +43,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
     const { scienceBonuses, presentationBonuses, totalBonuses } = useMemo(() => {
         const sci = parseValue(publishedWorks) + parseValue(oralReports) + parseValue(awards);
         const pres = parseValue(presentations) + parseValue(voicedPresentations);
-        return {
-            scienceBonuses: sci,
-            presentationBonuses: pres,
-            totalBonuses: sci + pres
-        };
+        return { scienceBonuses: sci, presentationBonuses: pres, totalBonuses: sci + pres };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
     // Обработчики изменений
@@ -123,34 +120,30 @@ const DayForm = ({ student, onStudentUpdate }) => {
 
         try {
             const finalScore = calculateFinalScore();
-            const evaluationData = {
-                skippedHours: parseValue(skippedHours),
-                notesVolume: parseValue(notesVolume),
-                labs: labs.map(parseValue),
-                tests: tests.map(parseValue),
-                writtenWorks: parseValue(writtenWorks),
-                publishedWorks: parseValue(publishedWorks),
-                oralReports: parseValue(oralReports),
-                urgentPublications: parseValue(urgentPublications),
-                awards: parseValue(awards),
-                presentations: parseValue(presentations),
-                voicedPresentations: parseValue(voicedPresentations),
-                closedLabs: parseValue(closedLabs),
-                bonusPoints: parseValue(bonusPoints),
-                baseScore: calculateBaseScore(),
-                result: finalScore,
-                lastUpdated: new Date().toISOString()
-            };
-
-            const updatedStudent = await updateStudentEvaluation(student.id, evaluationData);
+            const updatedStudent = await updateStudentEvaluation(student.id, finalScore);
 
             if (updatedStudent) {
-                alert(`Данные студента ${updatedStudent.fullName} успешно сохранены!\nИтоговая оценка: ${finalScore.toFixed(1)}`);
+                setNotification({
+                    type: 'success',
+                    title: '✅ Данные сохранены',
+                    content: (
+                        <>
+                            Успешно сохранены данные для <strong>{updatedStudent.fullName}</strong>
+                            <div style={{ marginTop: '8px' }}>
+                                Итоговая оценка: <strong>{finalScore.toFixed(1)}</strong>
+                            </div>
+                        </>
+                    )
+                });
+                setTimeout(() => setNotification(null), 5000);
                 onStudentUpdate?.();
             }
         } catch (error) {
-            console.error('Ошибка сохранения:', error);
-            alert(`Ошибка при сохранении: ${error.message}`);
+            setNotification({
+                type: 'error',
+                title: '⛔ Ошибка сохранения',
+                content: error.message || 'Не удалось сохранить данные'
+            });
         } finally {
             setIsSaving(false);
         }
@@ -181,11 +174,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
                                         max="10"
                                         value={lab}
                                         onChange={e => handleLabChange(index, e.target.value)}
-                                        onBlur={e => {
-                                            if (e.target.value === '') {
-                                                handleLabChange(index, '0');
-                                            }
-                                        }}
+                                        onBlur={e => lab === '' && handleLabChange(index, '0')}
                                     />
                                 </label>
                             </div>
@@ -204,11 +193,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
                                         max="10"
                                         value={test}
                                         onChange={e => handleTestChange(index, e.target.value)}
-                                        onBlur={e => {
-                                            if (e.target.value === '') {
-                                                handleTestChange(index, '0');
-                                            }
-                                        }}
+                                        onBlur={e => test === '' && handleTestChange(index, '0')}
                                     />
                                 </label>
                             </div>
@@ -285,6 +270,27 @@ const DayForm = ({ student, onStudentUpdate }) => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {notification && (
+                <div className={`notification ${notification.type}`}>
+                    <div className="notification-icon">
+                        {notification.type === 'success' ? '✔' : '⚠'}
+                    </div>
+                    <div className="notification-content">
+                        <h4>{notification.title}</h4>
+                        <div className="notification-message">
+                            {notification.content}
+                        </div>
+                    </div>
+                    <button
+                        className="notification-close"
+                        onClick={() => setNotification(null)}
+                        aria-label="Закрыть уведомление"
+                    >
+                        &times;
+                    </button>
+                </div>
             )}
         </div>
     );

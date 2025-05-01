@@ -3,6 +3,7 @@ import { updateStudentEvaluation } from '../../utils/db';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
+import '../../styles/dayform.css';
 
 const RemoteForm = ({ student }) => {
     // Состояния с пустыми строками вместо 0
@@ -17,6 +18,7 @@ const RemoteForm = ({ student }) => {
     const [calculationStep, setCalculationStep] = useState('initial');
     const [baseScore, setBaseScore] = useState(0);
     const [bonusPoints, setBonusPoints] = useState('');
+    const [notification, setNotification] = useState(null);
 
     // Парсинг значений с учетом пустых строк
     const parseValue = (value) => {
@@ -65,26 +67,34 @@ const RemoteForm = ({ student }) => {
 
     const handleSave = async () => {
         const finalScore = calculateFinalScore();
-        const data = {
-            labs: labs.map(parseValue),
-            writtenWorks: parseValue(writtenWorks),
-            publishedWorks: parseValue(publishedWorks),
-            oralReports: parseValue(oralReports),
-            urgentPublications: parseValue(urgentPublications),
-            awards: parseValue(awards),
-            presentations: parseValue(presentations),
-            voicedPresentations: parseValue(voicedPresentations),
-            bonusPoints: parseValue(bonusPoints),
-            result: finalScore,
-            form: 'ДО'
-        };
-        const updated = await updateStudentEvaluation(student.id, data);
+        const updated = await updateStudentEvaluation(student.id, finalScore);
         alert(`Сохранено: ${updated.fullName} — Оценка: ${finalScore.toFixed(1)}`);
     };
 
     return (
         <div className="remote-form">
             <h2>Оценка для {student.fullName} (Дистанционная форма)</h2>
+
+            {notification && (
+                <div className={`notification ${notification.type}`}>
+                    <div className="notification-icon">
+                        {notification.type === 'success' ? '✔' : '⚠'}
+                    </div>
+                    <div className="notification-content">
+                        <h4>{notification.title}</h4>
+                        <div className="notification-message">
+                            {notification.content}
+                        </div>
+                    </div>
+                    <button
+                        className="notification-close"
+                        onClick={() => setNotification(null)}
+                        aria-label="Закрыть уведомление"
+                    >
+                        &times;
+                    </button>
+                </div>
+            )}
 
             {calculationStep === 'initial' ? (
                 <>

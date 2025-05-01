@@ -7,6 +7,7 @@ const ExportGroupData = () => {
     const [selectedGroup, setSelectedGroup] = useState('');
     const [students, setStudents] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
 
     // Загрузка всех групп при монтировании
     useEffect(() => {
@@ -20,7 +21,7 @@ const ExportGroupData = () => {
         loadGroups();
     }, []);
 
-    // Загрузка студентов при изменении выбранной группы
+    // Загрузка студентов при изменении выбранной группы (для отображения количества)
     useEffect(() => {
         if (selectedGroup) {
             loadStudents(selectedGroup);
@@ -32,40 +33,53 @@ const ExportGroupData = () => {
         try {
             const groupStudents = await getStudentsByGroup(groupName);
             setStudents(groupStudents);
+            return groupStudents; // Возвращаем загруженных студентов
         } catch (error) {
             console.error('Ошибка загрузки студентов:', error);
             setStudents([]);
+            return []; // Возвращаем пустой массив в случае ошибки
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleExport = () => {
-        if (!selectedGroup || students.length === 0) {
-            alert('Нет данных для экспорта');
+    const handleExport = async () => {
+        if (!selectedGroup) {
+            alert('Выберите группу для экспорта');
             return;
         }
 
-        const exportData = students.map(student => ({
-            'ФИО': student.fullName || 'Не указано',
-            'Группа': student.groupName,
-            'Первичный балл': student.rawScore ?? 0,
-            'Итоговый балл': student.finalScore ?? 0,
-            'Остаток плюшек': student.bonusBalance ?? 0,
-            'Статус': student.status || 'Активен',
-            'Форма обучения': student.form || 'Дневная'
-        }));
+        setIsExporting(true);
+        try {
+            // Загружаем студентов перед экспортом (перезагружаем, даже если уже загружены)
+            const currentStudents = await loadStudents(selectedGroup);
 
-        const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.json_to_sheet(exportData);
+            if (currentStudents.length === 0) {
+                alert('Нет данных для экспорта');
+                return;
+            }
 
-        worksheet['!cols'] = [
-            { width: 30 }, { width: 15 }, { width: 15 },
-            { width: 15 }, { width: 18 }, { width: 12 }, { width: 15 }
-        ];
+            const exportData = currentStudents.map(student => ({
+                'ФИО': student.fullName || 'Не указано',
+                'Группа': student.groupName,
+                'Итоговый балл': student.finalMark ?? 0,
+            }));
 
-        XLSX.utils.book_append_sheet(workbook, worksheet, selectedGroup);
-        XLSX.writeFile(workbook, `Результаты_${selectedGroup}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+            worksheet['!cols'] = [
+                { width: 30 }, { width: 15 }, { width: 15 }
+            ];
+
+            XLSX.utils.book_append_sheet(workbook, worksheet, selectedGroup);
+            XLSX.writeFile(workbook, `Результаты_${selectedGroup}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        } catch (error) {
+            console.error('Ошибка при экспорте:', error);
+            alert('Произошла ошибка при экспорте данных');
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     return (
@@ -80,7 +94,7 @@ const ExportGroupData = () => {
                     placeholder="Введите или выберите группу"
                     value={selectedGroup}
                     onChange={(e) => setSelectedGroup(e.target.value)}
-                    disabled={isLoading}
+                    disabled={isLoading || isExporting}
                 />
                 <datalist id="group-options">
                     {groups.map((group, index) => (
@@ -96,11 +110,11 @@ const ExportGroupData = () => {
             </div>
 
             <button
-                className={`export-button ${isLoading ? 'loading' : ''}`}
+                className={`export-button ${isLoading || isExporting ? 'loading' : ''}`}
                 onClick={handleExport}
-                disabled={!selectedGroup || students.length === 0 || isLoading}
+                disabled={!selectedGroup || isLoading || isExporting}
             >
-                {isLoading ? 'Загрузка...' : 'Экспорт в Excel'}
+                {isExporting ? 'Экспортируется...' : isLoading ? 'Загрузка...' : 'Экспорт в Excel'}
             </button>
         </div>
     );

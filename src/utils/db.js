@@ -5,7 +5,7 @@ const STUDENT_STORE = 'students';
 const SANDBOX_STORE = 'sandbox';
 
 export const initDB = async () => {
-    return openDB(DB_NAME, 3, {
+    return openDB(DB_NAME, 5, {
         upgrade(db) {
             if (db.objectStoreNames.contains(STUDENT_STORE)) {
                 db.deleteObjectStore(STUDENT_STORE);
@@ -21,7 +21,6 @@ export const initDB = async () => {
             studentStore.createIndex('groupName', 'groupName');
             studentStore.createIndex('fullName', 'fullName');
             studentStore.createIndex('finalMark', 'finalMark');
-            studentStore.createIndex('plushiePoint', 'plushiePoint');
 
             db.createObjectStore(SANDBOX_STORE, {keyPath: 'id'});
         }
@@ -50,30 +49,17 @@ export const getStudentsBySearch = async (groupName, fullNamePrefix) => {
     );
 };
 
-export const updateStudentEvaluation = async (id, firstDigit, secondDigit, thirdDigit, form) => {
+export const updateStudentEvaluation = async (id, finalMark, plushiePoint) => {
     const db = await initDB();
     const tx = db.transaction(STUDENT_STORE, 'readwrite');
     const store = tx.objectStore(STUDENT_STORE);
     const student = await store.get(id);
     if (!student) return;
 
-    let result = 0;
-    switch (form) {
-        case 'Дневная':
-            result = Number(firstDigit) + Number(secondDigit) + Number(thirdDigit || 0);
-            break;
-        case 'ДО':
-            result = Number(firstDigit) + Number(secondDigit) - 1;
-            break;
-    }
-
     const updated = {
         ...student,
-        form,
-        firstDigit,
-        secondDigit,
-        thirdDigit,
-        result,
+        finalMark,
+        plushiePoint
     };
 
     await store.put(updated);
