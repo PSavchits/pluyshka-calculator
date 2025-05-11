@@ -97,25 +97,3 @@ export const deleteGroup = async (groupName) => {
     }
     return idsToDelete.length;
 };
-
-export const saveSandboxParams = async (params) => {
-    const db = await initDB();
-    const tx = db.transaction(SANDBOX_STORE, 'readwrite');
-    const store = tx.objectStore(SANDBOX_STORE);
-    await store.put({...params, id: 'sandbox_params'});
-    await tx.done;
-};
-
-export const getSandboxParams = async () => {
-    const db = await initDB();
-    const tx = db.transaction(SANDBOX_STORE, 'readonly');
-    const store = tx.objectStore(SANDBOX_STORE);
-    return await store.get('sandbox_params') || {
-        firstDigit: '',
-        secondDigit: '',
-        thirdDigit: '',
-        form: 'Дневная',
-        result: null
-    };
-};
-

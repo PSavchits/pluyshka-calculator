@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAllGroups, deleteGroup } from '../utils/db';
+import { getAllGroups, deleteGroup } from '../service/db';
 import '../styles/upload.css'
 import '../styles/delete.css'
 

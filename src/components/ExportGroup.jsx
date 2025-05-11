@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { getAllGroups, getStudentsByGroup } from '../utils/db';
+import { getAllGroups, getStudentsByGroup } from '../service/db';
 
 const ExportGroupData = () => {
     const [groups, setGroups] = useState([]);

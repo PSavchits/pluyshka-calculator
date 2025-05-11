@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getStudentsBySearch, getAllGroups } from '../../utils/db';
+import { getStudentsBySearch, getAllGroups } from '../../service/db';
 import * as XLSX from 'xlsx';
 import DayForm from './DayForm';
 import RemoteForm from './RemoteForm';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import * as XLSX from 'xlsx';
-import { saveStudents } from '../utils/db';
+import { saveStudents } from '../service/db';
 import '../styles/upload.css';
 
 const FileUpload = ({ onDone }) => {

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { updateStudentEvaluation } from '../../utils/db';
+import { updateStudentEvaluation } from '../../service/db';
 import AttendanceBlock from './blocks/AttendanceBlock';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
@@ -9,8 +9,10 @@ import '../../styles/dayform.css';
 const DayForm = ({ student, onStudentUpdate }) => {
     const [skippedHours, setSkippedHours] = useState(student.skippedHours?.toString() || '');
     const [notesVolume, setNotesVolume] = useState(student.notesVolume?.toString() || '');
-    const [labs, setLabs] = useState(student.labs?.map(String) || ['', '', '', '']);
-    const [tests, setTests] = useState(student.tests?.map(String) || ['', '', '']);
+    const [labCount, setLabCount] = useState(student.labs?.length || 4);
+    const [testCount, setTestCount] = useState(student.tests?.length || 3);
+    const [labs, setLabs] = useState(student.labs?.map(String) || Array(4).fill(''));
+    const [tests, setTests] = useState(student.tests?.map(String) || Array(3).fill(''));
     const [writtenWorks, setWrittenWorks] = useState(student.writtenWorks?.toString() || '');
     const [publishedWorks, setPublishedWorks] = useState(student.publishedWorks?.toString() || '');
     const [oralReports, setOralReports] = useState(student.oralReports?.toString() || '');
@@ -41,6 +43,30 @@ const DayForm = ({ student, onStudentUpdate }) => {
         };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
+    const handleLabCountChange = (newCount) => {
+        const count = Math.max(1, Math.min(10, parseInt(newCount) || 1));
+        setLabCount(count);
+        const newLabs = [...labs];
+        if (count > labs.length) {
+            newLabs.push(...Array(count - labs.length).fill(''));
+        } else {
+            newLabs.splice(count);
+        }
+        setLabs(newLabs);
+    };
+
+    const handleTestCountChange = (newCount) => {
+        const count = Math.max(1, Math.min(10, parseInt(newCount) || 1));
+        setTestCount(count);
+        const newTests = [...tests];
+        if (count > tests.length) {
+            newTests.push(...Array(count - tests.length).fill(''));
+        } else {
+            newTests.splice(count);
+        }
+        setTests(newTests);
+    };
+
     const handleLabChange = (index, value) => {
         const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
         const newLabs = [...labs];
@@ -61,8 +87,8 @@ const DayForm = ({ student, onStudentUpdate }) => {
         const parsedLabs = labs.map(parseValue);
         const parsedTests = tests.map(parseValue);
 
-        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / 4;
-        const testAvg = parsedTests.reduce((sum, val) => sum + val, 0) / 3;
+        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / labCount;
+        const testAvg = parsedTests.reduce((sum, val) => sum + val, 0) / testCount;
 
         let score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
 
@@ -196,7 +222,19 @@ const DayForm = ({ student, onStudentUpdate }) => {
 
                     <div className="section">
                         <h3>Лабораторные работы</h3>
-                        {labs.map((lab, index) => (
+                        <div className="input-group">
+                            <label>Количество лабораторных:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="1"
+                                    max="10"
+                                    value={labCount}
+                                    onChange={e => handleLabCountChange(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                        {labs.slice(0, labCount).map((lab, index) => (
                             <div className="input-group" key={index}>
                                 <label>Лаб {index + 1}:
                                     <input
@@ -219,7 +257,19 @@ const DayForm = ({ student, onStudentUpdate }) => {
 
                     <div className="section">
                         <h3>Тесты</h3>
-                        {tests.map((test, index) => (
+                        <div className="input-group">
+                            <label>Количество тестов:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="1"
+                                    max="10"
+                                    value={testCount}
+                                    onChange={e => handleTestCountChange(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                        {tests.slice(0, testCount).map((test, index) => (
                             <div className="input-group" key={index}>
                                 <label>Тест {index + 1}:
                                     <input

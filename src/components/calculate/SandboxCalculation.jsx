@@ -7,8 +7,10 @@ import '../../styles/sandbox.css';
 
 const SandboxCalculation = ({ show, onClose }) => {
     const [formType, setFormType] = useState('Дневная');
-    const [labs, setLabs] = useState(['', '', '', '']);
-    const [tests, setTests] = useState(['', '', '']);
+    const [labCount, setLabCount] = useState(4);
+    const [testCount, setTestCount] = useState(3);
+    const [labs, setLabs] = useState(Array(4).fill(''));
+    const [tests, setTests] = useState(Array(3).fill(''));
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
     const [oralReports, setOralReports] = useState('');
@@ -25,10 +27,14 @@ const SandboxCalculation = ({ show, onClose }) => {
     const parseValue = (value) => value === '' ? 0 : Math.min(10, Math.max(0, Number(value) || 0));
     useEffect(() => {
         if(formType === 'Дневная') {
-            setLabs(['', '', '', '']);
-            setTests(['', '', '']);
+            setLabCount(4);
+            setTestCount(3);
+            setLabs(Array(4).fill(''));
+            setTests(Array(3).fill(''));
         } else {
-            setLabs(['', '']);
+            setLabCount(2);
+            setTestCount(0);
+            setLabs(Array(2).fill(''));
             setTests([]);
         }
         setClosedLabs('');
@@ -36,11 +42,35 @@ const SandboxCalculation = ({ show, onClose }) => {
         setResult(null);
     }, [formType]);
 
+    const handleLabCountChange = (newCount) => {
+        const count = Math.max(1, Math.min(10, parseInt(newCount) || 1));
+        setLabCount(count);
+        const newLabs = [...labs];
+        if (count > labs.length) {
+            newLabs.push(...Array(count - labs.length).fill(''));
+        } else {
+            newLabs.splice(count);
+        }
+        setLabs(newLabs);
+    };
+
+    const handleTestCountChange = (newCount) => {
+        const count = Math.max(0, Math.min(10, parseInt(newCount) || 0));
+        setTestCount(count);
+        const newTests = [...tests];
+        if (count > tests.length) {
+            newTests.push(...Array(count - tests.length).fill(''));
+        } else {
+            newTests.splice(count);
+        }
+        setTests(newTests);
+    };
+
     const calculateResult = () => {
         let score = 0;
 
         const parsedLabs = labs.map(parseValue);
-        const parsedTests = formType === 'Дневная' ? tests.map(parseValue) : [];
+        const parsedTests = tests.map(parseValue);
         const parsedSkipped = parseValue(skippedHours);
         const parsedNotes = parseValue(notesVolume);
         const parsedClosedLabs = parseValue(closedLabs);
@@ -50,21 +80,33 @@ const SandboxCalculation = ({ show, onClose }) => {
         if(formType === 'Дневная') {
             const skipPenalty = Math.floor(parsedSkipped / 2) * 0.5;
             const notesBonus = parsedNotes >= 70 ? 1 : 0;
-            const activeLabsCount = 4 - Math.min(parsedClosedLabs, 4);
+            const activeLabsCount = labCount - Math.min(parsedClosedLabs, labCount);
             const activeLabs = parsedLabs.slice(0, activeLabsCount);
 
             const labAvg = activeLabsCount > 0
                 ? activeLabs.reduce((a, b) => a + b, 0) / activeLabsCount
                 : 0;
 
-            const testAvg = parsedTests.reduce((a, b) => a + b, 0) / 3;
+            const testAvg = testCount > 0 
+                ? parsedTests.reduce((a, b) => a + b, 0) / testCount 
+                : 0;
 
-            score = (labAvg + testAvg) / 2 + notesBonus - skipPenalty;
+            score = testCount > 0 
+                ? (labAvg + testAvg) / 2 + notesBonus - skipPenalty
+                : labAvg + notesBonus - skipPenalty;
+
             if(parsedUrgent > 0) score = Math.max(score, 8);
             score += parsedBonus;
         } else {
-            const labAvg = parsedLabs.reduce((a, b) => a + b, 0) / 2;
-            score = labAvg + parsedBonus;
+            const labAvg = parsedLabs.reduce((a, b) => a + b, 0) / labCount;
+            const testAvg = testCount > 0 
+                ? parsedTests.reduce((a, b) => a + b, 0) / testCount 
+                : 0;
+
+            score = testCount > 0 
+                ? (labAvg + testAvg) / 2 + parsedBonus
+                : labAvg + parsedBonus;
+
             if(parsedUrgent > 0) score = Math.max(score, 8);
         }
 
@@ -73,8 +115,10 @@ const SandboxCalculation = ({ show, onClose }) => {
 
     const handleReset = () => {
         setFormType('Дневная');
-        setLabs(['', '', '', '']);
-        setTests(['', '', '']);
+        setLabCount(4);
+        setTestCount(3);
+        setLabs(Array(4).fill(''));
+        setTests(Array(3).fill(''));
         setWrittenWorks('');
         setPublishedWorks('');
         setOralReports('');
@@ -119,7 +163,19 @@ const SandboxCalculation = ({ show, onClose }) => {
                 <div className="sections-container">
                     <div className="section">
                         <h3>Лабораторные работы</h3>
-                        {labs.map((lab, index) => (
+                        <div className="input-group">
+                            <label>Количество лабораторных:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="1"
+                                    max="10"
+                                    value={labCount}
+                                    onChange={(e) => handleLabCountChange(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                        {labs.slice(0, labCount).map((lab, index) => (
                             <div className="input-group" key={index}>
                                 <label>Лаб {index + 1}:
                                     <input
@@ -142,32 +198,42 @@ const SandboxCalculation = ({ show, onClose }) => {
                         ))}
                     </div>
 
-                    {formType === 'Дневная' && (
-                        <div className="section">
-                            <h3>Тесты</h3>
-                            {tests.map((test, index) => (
-                                <div className="input-group" key={index}>
-                                    <label>Тест {index + 1}:
-                                        <input
-                                            type="number"
-                                            className="no-spin"
-                                            min="0"
-                                            max="10"
-                                            value={test}
-                                            onChange={(e) =>
-                                                handleArrayChange(tests, setTests, index, e.target.value, 10)
-                                            }
-                                            onBlur={(e) => {
-                                                if(e.target.value === '') {
-                                                    handleArrayChange(tests, setTests, index, '0', 10);
-                                                }
-                                            }}
-                                        />
-                                    </label>
-                                </div>
-                            ))}
+                    <div className="section">
+                        <h3>Тесты</h3>
+                        <div className="input-group">
+                            <label>Количество тестов:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="0"
+                                    max="10"
+                                    value={testCount}
+                                    onChange={(e) => handleTestCountChange(e.target.value)}
+                                />
+                            </label>
                         </div>
-                    )}
+                        {tests.slice(0, testCount).map((test, index) => (
+                            <div className="input-group" key={index}>
+                                <label>Тест {index + 1}:
+                                    <input
+                                        type="number"
+                                        className="no-spin"
+                                        min="0"
+                                        max="10"
+                                        value={test}
+                                        onChange={(e) =>
+                                            handleArrayChange(tests, setTests, index, e.target.value, 10)
+                                        }
+                                        onBlur={(e) => {
+                                            if(e.target.value === '') {
+                                                handleArrayChange(tests, setTests, index, '0', 10);
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ))}
+                    </div>
 
                     {formType === 'Дневная' && (
                         <AttendanceBlock

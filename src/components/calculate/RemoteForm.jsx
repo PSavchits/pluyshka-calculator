@@ -1,12 +1,15 @@
 import React, {useMemo, useState} from 'react';
-import {updateStudentEvaluation} from '../../utils/db';
+import {updateStudentEvaluation} from '../../service/db';
 import ScienceBlock from './blocks/ScienceBlock';
 import PresentationBlock from './blocks/PresentationBlock';
 import BonusDistribution from './blocks/BonusDistribution';
 import '../../styles/dayform.css';
 
 const RemoteForm = ({student, onStudentUpdate}) => {
-    const [labs, setLabs] = useState(['', '']);
+    const [labCount, setLabCount] = useState(student.labs?.length || 2);
+    const [testCount, setTestCount] = useState(student.tests?.length || 0);
+    const [labs, setLabs] = useState(student.labs?.map(String) || Array(2).fill(''));
+    const [tests, setTests] = useState(student.tests?.map(String) || []);
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
     const [oralReports, setOralReports] = useState('');
@@ -36,20 +39,28 @@ const RemoteForm = ({student, onStudentUpdate}) => {
         };
     }, [publishedWorks, oralReports, awards, presentations, voicedPresentations]);
 
-    const calculateBaseScore = () => {
-        const parsedLabs = labs.map(parseValue);
-        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / 2;
-        let score = labAvg;
-        if (parseValue(urgentPublications) > 0) score = Math.max(score, 8);
-        return Math.min(Math.max(score, 0), 10);
+    const handleLabCountChange = (newCount) => {
+        const count = Math.max(1, Math.min(10, parseInt(newCount) || 1));
+        setLabCount(count);
+        const newLabs = [...labs];
+        if (count > labs.length) {
+            newLabs.push(...Array(count - labs.length).fill(''));
+        } else {
+            newLabs.splice(count);
+        }
+        setLabs(newLabs);
     };
 
-    const calculateFinalScore = () => {
-        const parsedLabs = labs.map(parseValue);
-        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / 2;
-        let score = labAvg + parseValue(bonusPoints);
-        if (parseValue(urgentPublications) > 0) score = Math.max(score, 8);
-        return Math.min(Math.max(score, 0), 10);
+    const handleTestCountChange = (newCount) => {
+        const count = Math.max(0, Math.min(10, parseInt(newCount) || 0));
+        setTestCount(count);
+        const newTests = [...tests];
+        if (count > tests.length) {
+            newTests.push(...Array(count - tests.length).fill(''));
+        } else {
+            newTests.splice(count);
+        }
+        setTests(newTests);
     };
 
     const handleLabChange = (index, value) => {
@@ -59,9 +70,41 @@ const RemoteForm = ({student, onStudentUpdate}) => {
         setLabs(newLabs);
     };
 
+    const handleTestChange = (index, value) => {
+        const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
+        const newTests = [...tests];
+        newTests[index] = newValue;
+        setTests(newTests);
+    };
+
     const handleInitialCalculation = () => {
         setBaseScore(calculateBaseScore());
         setCalculationStep('distribution');
+    };
+
+    const calculateBaseScore = () => {
+        const parsedLabs = labs.map(parseValue);
+        const parsedTests = tests.map(parseValue);
+        
+        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / labCount;
+        const testAvg = testCount > 0 ? parsedTests.reduce((sum, val) => sum + val, 0) / testCount : 0;
+        
+        let score = testCount > 0 ? (labAvg + testAvg) / 2 : labAvg;
+        if (parseValue(urgentPublications) > 0) score = Math.max(score, 8);
+        return Math.min(Math.max(score, 0), 10);
+    };
+
+    const calculateFinalScore = () => {
+        const parsedLabs = labs.map(parseValue);
+        const parsedTests = tests.map(parseValue);
+        
+        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / labCount;
+        const testAvg = testCount > 0 ? parsedTests.reduce((sum, val) => sum + val, 0) / testCount : 0;
+        
+        let score = testCount > 0 ? (labAvg + testAvg) / 2 : labAvg;
+        score += parseValue(bonusPoints);
+        if (parseValue(urgentPublications) > 0) score = Math.max(score, 8);
+        return Math.min(Math.max(score, 0), 10);
     };
 
     const handleSave = async () => {
@@ -71,6 +114,7 @@ const RemoteForm = ({student, onStudentUpdate}) => {
             const finalScore = calculateFinalScore();
             const data = {
                 labs: labs.map(parseValue),
+                tests: tests.map(parseValue),
                 writtenWorks: parseValue(writtenWorks),
                 publishedWorks: parseValue(publishedWorks),
                 oralReports: parseValue(oralReports),
@@ -143,7 +187,19 @@ const RemoteForm = ({student, onStudentUpdate}) => {
                 <>
                     <div className="section">
                         <h3>Лабораторные работы</h3>
-                        {labs.map((lab, index) => (
+                        <div className="input-group">
+                            <label>Количество лабораторных:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="1"
+                                    max="10"
+                                    value={labCount}
+                                    onChange={e => handleLabCountChange(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                        {labs.slice(0, labCount).map((lab, index) => (
                             <div className="input-group" key={index}>
                                 <label>Лаб {index + 1}:
                                     <input
@@ -156,6 +212,41 @@ const RemoteForm = ({student, onStudentUpdate}) => {
                                         onBlur={e => {
                                             if (e.target.value === '') {
                                                 handleLabChange(index, '0');
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="section">
+                        <h3>Тесты</h3>
+                        <div className="input-group">
+                            <label>Количество тестов:
+                                <input
+                                    type="number"
+                                    className="no-spin"
+                                    min="0"
+                                    max="10"
+                                    value={testCount}
+                                    onChange={e => handleTestCountChange(e.target.value)}
+                                />
+                            </label>
+                        </div>
+                        {tests.slice(0, testCount).map((test, index) => (
+                            <div className="input-group" key={index}>
+                                <label>Тест {index + 1}:
+                                    <input
+                                        type="number"
+                                        className="no-spin"
+                                        min="0"
+                                        max="10"
+                                        value={test}
+                                        onChange={e => handleTestChange(index, e.target.value)}
+                                        onBlur={e => {
+                                            if (e.target.value === '') {
+                                                handleTestChange(index, '0');
                                             }
                                         }}
                                     />
