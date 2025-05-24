@@ -10,6 +10,7 @@ const RemoteForm = ({student, onStudentUpdate}) => {
     const [testCount, setTestCount] = useState(student.tests?.length || 0);
     const [labs, setLabs] = useState(student.labs?.map(String) || Array(2).fill(''));
     const [tests, setTests] = useState(student.tests?.map(String) || []);
+    const [labPassed, setLabPassed] = useState(student.labs?.map(lab => lab >= 6) || Array(2).fill(false));
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
     const [oralReports, setOralReports] = useState('');
@@ -43,12 +44,16 @@ const RemoteForm = ({student, onStudentUpdate}) => {
         const count = Math.max(1, Math.min(10, parseInt(newCount) || 1));
         setLabCount(count);
         const newLabs = [...labs];
+        const newLabPassed = [...labPassed];
         if (count > labs.length) {
             newLabs.push(...Array(count - labs.length).fill(''));
+            newLabPassed.push(...Array(count - labPassed.length).fill(false));
         } else {
             newLabs.splice(count);
+            newLabPassed.splice(count);
         }
         setLabs(newLabs);
+        setLabPassed(newLabPassed);
     };
 
     const handleTestCountChange = (newCount) => {
@@ -64,10 +69,9 @@ const RemoteForm = ({student, onStudentUpdate}) => {
     };
 
     const handleLabChange = (index, value) => {
-        const newValue = value === '' ? '' : Math.max(0, Math.min(10, Number(value)));
-        const newLabs = [...labs];
-        newLabs[index] = newValue;
-        setLabs(newLabs);
+        const newLabPassed = [...labPassed];
+        newLabPassed[index] = value === 'passed';
+        setLabPassed(newLabPassed);
     };
 
     const handleTestChange = (index, value) => {
@@ -83,10 +87,9 @@ const RemoteForm = ({student, onStudentUpdate}) => {
     };
 
     const calculateBaseScore = () => {
-        const parsedLabs = labs.map(parseValue);
+        const passedLabsCount = labPassed.filter(passed => passed).length;
+        const labAvg = passedLabsCount > 0 ? (passedLabsCount * 6) / labCount : 0;
         const parsedTests = tests.map(parseValue);
-        
-        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / labCount;
         const testAvg = testCount > 0 ? parsedTests.reduce((sum, val) => sum + val, 0) / testCount : 0;
         
         let score = testCount > 0 ? (labAvg + testAvg) / 2 : labAvg;
@@ -95,10 +98,9 @@ const RemoteForm = ({student, onStudentUpdate}) => {
     };
 
     const calculateFinalScore = () => {
-        const parsedLabs = labs.map(parseValue);
+        const passedLabsCount = labPassed.filter(passed => passed).length;
+        const labAvg = passedLabsCount > 0 ? (passedLabsCount * 6) / labCount : 0;
         const parsedTests = tests.map(parseValue);
-        
-        const labAvg = parsedLabs.reduce((sum, val) => sum + val, 0) / labCount;
         const testAvg = testCount > 0 ? parsedTests.reduce((sum, val) => sum + val, 0) / testCount : 0;
         
         let score = testCount > 0 ? (labAvg + testAvg) / 2 : labAvg;
@@ -113,7 +115,7 @@ const RemoteForm = ({student, onStudentUpdate}) => {
         try {
             const finalScore = calculateFinalScore();
             const data = {
-                labs: labs.map(parseValue),
+                labs: labPassed.map(passed => passed ? 6 : 0),
                 tests: tests.map(parseValue),
                 writtenWorks: parseValue(writtenWorks),
                 publishedWorks: parseValue(publishedWorks),
@@ -202,19 +204,13 @@ const RemoteForm = ({student, onStudentUpdate}) => {
                         {labs.slice(0, labCount).map((lab, index) => (
                             <div className="input-group" key={index}>
                                 <label>Лаб {index + 1}:
-                                    <input
-                                        type="number"
-                                        className="no-spin"
-                                        min="0"
-                                        max="10"
-                                        value={lab}
+                                    <select
+                                        value={labPassed[index] ? 'passed' : 'failed'}
                                         onChange={e => handleLabChange(index, e.target.value)}
-                                        onBlur={e => {
-                                            if (e.target.value === '') {
-                                                handleLabChange(index, '0');
-                                            }
-                                        }}
-                                    />
+                                    >
+                                        <option value="passed">Сдано</option>
+                                        <option value="failed">Не сдано</option>
+                                    </select>
                                 </label>
                             </div>
                         ))}

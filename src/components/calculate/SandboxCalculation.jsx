@@ -11,6 +11,7 @@ const SandboxCalculation = ({ show, onClose }) => {
     const [testCount, setTestCount] = useState(3);
     const [labs, setLabs] = useState(Array(4).fill(''));
     const [tests, setTests] = useState(Array(3).fill(''));
+    const [labPassed, setLabPassed] = useState(Array(4).fill(false));
     const [writtenWorks, setWrittenWorks] = useState('');
     const [publishedWorks, setPublishedWorks] = useState('');
     const [oralReports, setOralReports] = useState('');
@@ -31,11 +32,13 @@ const SandboxCalculation = ({ show, onClose }) => {
             setTestCount(3);
             setLabs(Array(4).fill(''));
             setTests(Array(3).fill(''));
+            setLabPassed(Array(4).fill(false));
         } else {
             setLabCount(2);
             setTestCount(0);
             setLabs(Array(2).fill(''));
             setTests([]);
+            setLabPassed(Array(2).fill(false));
         }
         setClosedLabs('');
         setBonusPoints('');
@@ -80,8 +83,16 @@ const SandboxCalculation = ({ show, onClose }) => {
         if(formType === 'Дневная') {
             const skipPenalty = Math.floor(parsedSkipped / 2) * 0.5;
             const notesBonus = parsedNotes >= 70 ? 1 : 0;
-            const activeLabsCount = labCount - Math.min(parsedClosedLabs, labCount);
-            const activeLabs = parsedLabs.slice(0, activeLabsCount);
+            
+            const labIndices = parsedLabs
+                .map((score, index) => ({ score, index }))
+                .sort((a, b) => a.score - b.score)
+                .map(item => item.index);
+
+            const labsToExclude = labIndices.slice(0, parsedClosedLabs);
+            
+            const activeLabs = parsedLabs.filter((_, index) => !labsToExclude.includes(index));
+            const activeLabsCount = activeLabs.length;
 
             const labAvg = activeLabsCount > 0
                 ? activeLabs.reduce((a, b) => a + b, 0) / activeLabsCount
@@ -98,7 +109,9 @@ const SandboxCalculation = ({ show, onClose }) => {
             if(parsedUrgent > 0) score = Math.max(score, 8);
             score += parsedBonus;
         } else {
-            const labAvg = parsedLabs.reduce((a, b) => a + b, 0) / labCount;
+            const passedLabsCount = labPassed.filter(passed => passed).length;
+            const labAvg = passedLabsCount > 0 ? (passedLabsCount * 6) / labCount : 0;
+            
             const testAvg = testCount > 0 
                 ? parsedTests.reduce((a, b) => a + b, 0) / testCount 
                 : 0;
@@ -119,6 +132,7 @@ const SandboxCalculation = ({ show, onClose }) => {
         setTestCount(3);
         setLabs(Array(4).fill(''));
         setTests(Array(3).fill(''));
+        setLabPassed(Array(4).fill(false));
         setWrittenWorks('');
         setPublishedWorks('');
         setOralReports('');
@@ -178,21 +192,35 @@ const SandboxCalculation = ({ show, onClose }) => {
                         {labs.slice(0, labCount).map((lab, index) => (
                             <div className="input-group" key={index}>
                                 <label>Лаб {index + 1}:
-                                    <input
-                                        type="number"
-                                        className="no-spin"
-                                        min="0"
-                                        max="10"
-                                        value={lab}
-                                        onChange={(e) =>
-                                            handleArrayChange(labs, setLabs, index, e.target.value, 10)
-                                        }
-                                        onBlur={(e) => {
-                                            if(e.target.value === '') {
-                                                handleArrayChange(labs, setLabs, index, '0', 10);
+                                    {formType === 'Дневная' ? (
+                                        <input
+                                            type="number"
+                                            className="no-spin"
+                                            min="0"
+                                            max="10"
+                                            value={lab}
+                                            onChange={(e) =>
+                                                handleArrayChange(labs, setLabs, index, e.target.value, 10)
                                             }
-                                        }}
-                                    />
+                                            onBlur={(e) => {
+                                                if(e.target.value === '') {
+                                                    handleArrayChange(labs, setLabs, index, '0', 10);
+                                                }
+                                            }}
+                                        />
+                                    ) : (
+                                        <select
+                                            value={labPassed[index] ? 'passed' : 'failed'}
+                                            onChange={(e) => {
+                                                const newLabPassed = [...labPassed];
+                                                newLabPassed[index] = e.target.value === 'passed';
+                                                setLabPassed(newLabPassed);
+                                            }}
+                                        >
+                                            <option value="passed">Сдано</option>
+                                            <option value="failed">Не сдано</option>
+                                        </select>
+                                    )}
                                 </label>
                             </div>
                         ))}
@@ -272,6 +300,7 @@ const SandboxCalculation = ({ show, onClose }) => {
                         setBonusPoints={setBonusPoints}
                         maxLabsToClose={4}
                         isRemote={formType === 'ДО'}
+                        labScores={formType === 'Дневная' ? labs.map(parseValue) : []}
                     />
                 </div>
 

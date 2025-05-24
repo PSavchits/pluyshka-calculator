@@ -8,7 +8,8 @@ const BonusDistribution = ({
                                bonusPoints,
                                setBonusPoints,
                                maxLabsToClose = 4,
-                               isRemote = false
+                               isRemote = false,
+                               labScores = []
                            }) => {
     const usedBonuses = isRemote ? bonusPoints : closedLabs + bonusPoints;
     const remainingBonuses = totalBonuses - usedBonuses;
@@ -57,6 +58,13 @@ const BonusDistribution = ({
         }
     }, [totalBonuses, isRemote, bonusPoints, closedLabs, setBonusPoints, setClosedLabs]);
 
+    const getLowestLabIndices = () => {
+        return labScores
+            .map((score, index) => ({ score, index }))
+            .sort((a, b) => a.score - b.score)
+            .map(item => item.index);
+    };
+
     return (
         <div className="bonus-distribution">
             <h3>Распределение бонусов</h3>
@@ -79,6 +87,19 @@ const BonusDistribution = ({
                             />
                             <span className="hint">(макс. {maxLabsToClose})</span>
                         </label>
+                        {closedLabs > 0 && labScores.length > 0 && (
+                            <div className="closed-labs-info">
+                                <ul>
+                                    {getLowestLabIndices()
+                                        .slice(0, closedLabs)
+                                        .map((labIndex, i) => (
+                                            <li key={i}>
+                                                Лаб {labIndex + 1} (оценка: {labScores[labIndex]})
+                                            </li>
+                                        ))}
+                                </ul>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -99,8 +120,8 @@ const BonusDistribution = ({
                             className="no-spin"
                         />
                         <span className="hint">
-              (доступно: {isRemote ? totalBonuses : totalBonuses - closedLabs})
-            </span>
+                            (доступно: {isRemote ? totalBonuses : totalBonuses - closedLabs})
+                        </span>
                     </label>
                 </div>
             </div>

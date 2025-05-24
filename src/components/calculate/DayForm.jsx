@@ -338,6 +338,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
                         bonusPoints={bonusPoints}
                         setBonusPoints={setBonusPoints}
                         maxLabsToClose={4}
+                        labScores={labs.map(parseValue)}
                     />
 
                     <div className="final-score">
