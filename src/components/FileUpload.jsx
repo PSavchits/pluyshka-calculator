@@ -6,6 +6,8 @@ import '../styles/upload.css';
 const FileUpload = ({ onDone }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [notification, setNotification] = useState(null);
+    const [startRow, setStartRow] = useState(8);
+    const [startColumn, setStartColumn] = useState('D');
 
     const handleFile = async (e) => {
         const file = e.target.files[0];
@@ -28,11 +30,11 @@ const FileUpload = ({ onDone }) => {
 
             workbook.SheetNames.forEach((sheetName) => {
                 const worksheet = workbook.Sheets[sheetName];
-                let row = 8;
+                let row = startRow;
                 const students = [];
 
                 while (true) {
-                    const cellAddress = `D${row}`;
+                    const cellAddress = `${startColumn}${row}`;
                     const cell = worksheet[cellAddress];
 
                     if (!cell || !cell.v || String(cell.v).trim() === '') {
@@ -90,7 +92,32 @@ const FileUpload = ({ onDone }) => {
     return (
         <div className="file-upload-wrapper">
             <h3>Загрузка списка учащихся</h3>
-            <p>Файл должен содержать листы с названиями групп, списки начинаются с ячейки D8</p>
+            <p>Настройте параметры чтения данных из файла</p>
+
+            <div className="upload-config">
+                <div className="config-item">
+                    <label htmlFor="startColumn">Начальный столбец:</label>
+                    <input
+                        id="startColumn"
+                        type="text"
+                        value={startColumn}
+                        onChange={(e) => setStartColumn(e.target.value.toUpperCase())}
+                        maxLength={1}
+                        placeholder="D"
+                    />
+                </div>
+                <div className="config-item">
+                    <label htmlFor="startRow">Начальная строка:</label>
+                    <input
+                        id="startRow"
+                        type="number"
+                        value={startRow}
+                        onChange={(e) => setStartRow(parseInt(e.target.value) || 8)}
+                        min={1}
+                        placeholder="8"
+                    />
+                </div>
+            </div>
 
             <input
                 id="fileInput"

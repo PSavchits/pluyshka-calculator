@@ -125,8 +125,14 @@ const RemoteForm = ({student, onStudentUpdate}) => {
                 presentations: parseValue(presentations),
                 voicedPresentations: parseValue(voicedPresentations),
                 bonusPoints: parseValue(bonusPoints),
-                result: finalScore,
-                form: 'ДО'
+                baseScore: calculateBaseScore(),
+                finalMark: finalScore,
+                remainingBonuses: totalBonuses - parseValue(bonusPoints),
+                scienceBonuses,
+                presentationBonuses,
+                totalBonuses,
+                form: 'ДО',
+                lastUpdated: new Date().toISOString()
             };
 
             const updated = await updateStudentEvaluation(student.id, data);
@@ -140,6 +146,8 @@ const RemoteForm = ({student, onStudentUpdate}) => {
                             Успешно сохранены данные для <strong>{updated.fullName}</strong>
                             <div style={{marginTop: '8px'}}>
                                 Итоговая оценка: <strong>{finalScore.toFixed(1)}</strong>
+                                <br />
+                                Оставшиеся бонусы: <strong>{data.remainingBonuses}</strong>
                             </div>
                         </>
                     )

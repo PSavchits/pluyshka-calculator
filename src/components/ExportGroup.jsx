@@ -62,15 +62,43 @@ const ExportGroupData = () => {
             const exportData = currentStudents.map(student => ({
                 'ФИО': student.fullName || 'Не указано',
                 'Группа': student.groupName,
-                'Итоговый балл': student.finalMark ?? 0,
+                'Форма обучения': student.form || 'Не указано',
+                'Базовый балл': student.baseScore?.toFixed(1) || '0',
+                'Итоговый балл': student.finalMark?.toFixed(1) || '0',
+                'Научные бонусы': student.scienceBonuses || '0',
+                'Бонусы за презентации': student.presentationBonuses || '0',
+                'Использовано бонусов': student.bonusPoints || '0',
+                'Осталось бонусов': student.remainingBonuses || '0',
+                'Последнее обновление': student.lastUpdated ? new Date(student.lastUpdated).toLocaleString() : 'Не указано'
             }));
 
             const workbook = XLSX.utils.book_new();
             const worksheet = XLSX.utils.json_to_sheet(exportData);
 
+            // Настройка ширины столбцов
             worksheet['!cols'] = [
-                { width: 30 }, { width: 15 }, { width: 15 }
+                { width: 30 },  // ФИО
+                { width: 15 },  // Группа
+                { width: 15 },  // Форма обучения
+                { width: 12 },  // Базовый балл
+                { width: 12 },  // Итоговый балл
+                { width: 15 },  // Научные бонусы
+                { width: 20 },  // Бонусы за презентации
+                { width: 15 },  // Использовано бонусов
+                { width: 15 },  // Осталось бонусов
+                { width: 20 }   // Последнее обновление
             ];
+
+            // Добавление стилей для заголовков
+            const range = XLSX.utils.decode_range(worksheet['!ref']);
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+                if (!worksheet[cellAddress]) continue;
+                worksheet[cellAddress].s = {
+                    font: { bold: true },
+                    fill: { fgColor: { rgb: "E0E0E0" } }
+                };
+            }
 
             XLSX.utils.book_append_sheet(workbook, worksheet, selectedGroup);
             XLSX.writeFile(workbook, `Результаты_${selectedGroup}_${new Date().toISOString().slice(0,10)}.xlsx`);

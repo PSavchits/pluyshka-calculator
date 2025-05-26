@@ -151,7 +151,12 @@ const DayForm = ({ student, onStudentUpdate }) => {
                 closedLabs: parseValue(closedLabs),
                 bonusPoints: parseValue(bonusPoints),
                 baseScore: calculateBaseScore(),
-                result: finalScore,
+                finalMark: finalScore,
+                remainingBonuses: totalBonuses - parseValue(bonusPoints),
+                scienceBonuses,
+                presentationBonuses,
+                totalBonuses,
+                form: 'Дневная',
                 lastUpdated: new Date().toISOString()
             };
 
@@ -166,6 +171,8 @@ const DayForm = ({ student, onStudentUpdate }) => {
                             Успешно сохранены данные для <strong>{updatedStudent.fullName}</strong>
                             <div style={{ marginTop: '8px' }}>
                                 Итоговая оценка: <strong>{finalScore.toFixed(1)}</strong>
+                                <br />
+                                Оставшиеся бонусы: <strong>{evaluationData.remainingBonuses}</strong>
                             </div>
                         </>
                     )
@@ -262,7 +269,7 @@ const DayForm = ({ student, onStudentUpdate }) => {
                                 <input
                                     type="number"
                                     className="no-spin"
-                                    min="1"
+                                    min="0"
                                     max="10"
                                     value={testCount}
                                     onChange={e => handleTestCountChange(e.target.value)}

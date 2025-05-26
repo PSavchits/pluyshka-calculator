@@ -49,7 +49,7 @@ export const getStudentsBySearch = async (groupName, fullNamePrefix) => {
     );
 };
 
-export const updateStudentEvaluation = async (id, finalMark, plushiePoint) => {
+export const updateStudentEvaluation = async (id, evaluationData) => {
     const db = await initDB();
     const tx = db.transaction(STUDENT_STORE, 'readwrite');
     const store = tx.objectStore(STUDENT_STORE);
@@ -58,8 +58,8 @@ export const updateStudentEvaluation = async (id, finalMark, plushiePoint) => {
 
     const updated = {
         ...student,
-        finalMark,
-        plushiePoint
+        ...evaluationData,
+        lastUpdated: new Date().toISOString()
     };
 
     await store.put(updated);
